@@ -22,8 +22,8 @@
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:0}
-body{font-family:var(--sans);color:var(--tinta);background:var(--creme);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+html{overflow-x:hidden;overflow-x:clip;scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:0}
+body{font-family:var(--sans);color:var(--tinta);background:var(--creme);line-height:1.6;overflow-x:hidden;overflow-x:clip;max-width:100%;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 a{color:inherit}
 svg.i{width:18px;height:18px;flex:none;fill:currentColor}
@@ -57,12 +57,14 @@ svg.i{width:18px;height:18px;flex:none;fill:currentColor}
 .sw-dourado{background:linear-gradient(135deg,#f7dc9a,#c99a3f 55%,#f3d58a)}
 
 /* capa */
-.capa{display:grid;grid-template-columns:1fr;background:var(--vinho);color:var(--pele)}
+.capa{display:grid;grid-template-columns:minmax(0,1fr);background:var(--vinho);color:var(--pele)}
 .capa .foto{aspect-ratio:4/5;max-height:58svh;width:100%;background-size:cover;background-position:center 0%}
 .capa .texto{padding:40px 24px 46px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
 .capa .texto::before{content:"";position:absolute;inset:12px;border:1px solid rgba(254,230,213,.18);pointer-events:none}
 .capa .coroa{width:min(150px,40vw);height:auto;aspect-ratio:2530/1320;color:var(--pele)}
-.capa h1{font-family:'Gilda Display',Georgia,serif;font-weight:400;text-transform:uppercase;color:var(--pele);font-size:clamp(17px,4.8vw,32px);letter-spacing:.04em;line-height:1.25;margin-top:20px;white-space:nowrap}
+.capa h1{font-family:'Gilda Display',Georgia,serif;font-weight:400;text-transform:uppercase;color:var(--pele);font-size:clamp(17px,4.8vw,32px);letter-spacing:.04em;line-height:1.25;margin-top:20px;max-width:100%;overflow-wrap:break-word;text-wrap:balance}
+@media (min-width:480px){.capa h1{white-space:nowrap}}
+@media (max-width:479.98px){.capa h1 span{display:none}}
 .capa h1 span{opacity:.75;font-weight:400}
 .capa p{font-family:'Gilda Display',Georgia,serif;font-size:clamp(17px,4.5vw,21px);font-weight:400;line-height:1.55;max-width:28ch;margin-top:16px;color:var(--pele-2)}
 .capa .bt-borda{margin-top:26px}
