@@ -7,7 +7,7 @@ const gilda = Gilda_Display({ subsets: ["latin"], weight: "400", variable: "--fo
 const jost = Jost({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--fonte-jost", display: "swap" });
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--fonte-montserrat", display: "swap" });
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://catalogobeyondruby.vercel.app";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://sitebeyondruby.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

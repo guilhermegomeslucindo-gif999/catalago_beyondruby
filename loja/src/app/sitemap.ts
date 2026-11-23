@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getCategorias, getProdutos } from "@/lib/dados";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://catalogobeyondruby.vercel.app";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://sitebeyondruby.vercel.app";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
