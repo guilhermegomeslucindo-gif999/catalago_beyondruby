@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { foneBonito, linkWhats } from "@/lib/formato";
+import { foneBonito, linkWhats, MENSAGEM_PADRAO } from "@/lib/formato";
 import { useSacola } from "./Sacola";
 import { Coroa, IcBusca, IcFechar, IcInsta, IcMenu, IcSacola, IcSeta, IcZap } from "./Icones";
 
@@ -62,7 +62,7 @@ export function Cabecalho({ categorias, whatsapp, instagram }: { categorias: Cat
             <b>BEYOND RUBY</b>
           </Link>
           <div className="topo-dir">
-            <a className="bt-ic so-desk" href={linkWhats(whatsapp, "Olá, Beyond Ruby! Vim pelo site.")} target="_blank" rel="noopener" aria-label="Falar no WhatsApp"><IcZap style={{ color: "#1f9d55" }} /></a>
+            <a className="bt-ic so-desk" href={linkWhats(whatsapp, MENSAGEM_PADRAO)} target="_blank" rel="noopener" aria-label="Falar no WhatsApp"><IcZap style={{ color: "#1f9d55" }} /></a>
             <button className="bt-ic" onClick={abrir} aria-label={`Abrir sacola${quantidade ? `, ${quantidade} itens` : ""}`}>
               <IcSacola />
               {pronta && quantidade > 0 && <span className="contador">{quantidade}</span>}
@@ -89,7 +89,7 @@ export function Cabecalho({ categorias, whatsapp, instagram }: { categorias: Cat
           <Link href="/cuidados">Cuidados com as peças <IcSeta /></Link>
           <Link href="/trocas">Trocas e garantia <IcSeta /></Link>
           <div className="menu-rodape">
-            <a href={linkWhats(whatsapp, "Olá, Beyond Ruby! Vim pelo site.")} target="_blank" rel="noopener"><IcZap style={{ color: "#1f9d55" }} /> {foneBonito(whatsapp)}</a>
+            <a href={linkWhats(whatsapp, MENSAGEM_PADRAO)} target="_blank" rel="noopener"><IcZap style={{ color: "#1f9d55" }} /> {foneBonito(whatsapp)}</a>
             {instagram && <a href={`https://instagram.com/${instagram.replace("@", "")}`} target="_blank" rel="noopener"><IcInsta /> @{instagram.replace("@", "")}</a>}
           </div>
         </nav>

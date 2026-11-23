@@ -1,6 +1,8 @@
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 export const moeda = (v: number | string) => brl.format(Number(v));
 
+export const MENSAGEM_PADRAO = "Olá, Beyond Ruby! Vim pelo site e gostaria de adquirir minha peça.";
+
 export const linkWhats = (numero: string, texto: string) =>
   `https://wa.me/${numero.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
 

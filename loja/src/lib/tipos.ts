@@ -19,7 +19,7 @@ export type Produto = {
   produto_imagens: Imagem[];
 };
 
-export type Categoria = { slug: string; nome: string; subtitulo: string | null; imagem_url: string | null; ordem: number };
+export type Categoria = { slug: string; nome: string; subtitulo: string | null; imagem_url: string | null; ordem: number; na_capa?: boolean };
 
 export type RegiaoUber = { id: string; nome: string; valor: number };
 export type ConfigFrete = {

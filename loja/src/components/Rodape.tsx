@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Categoria, ConfigLoja } from "@/lib/tipos";
-import { foneBonito, linkWhats } from "@/lib/formato";
+import { foneBonito, linkWhats, MENSAGEM_PADRAO } from "@/lib/formato";
 import { IcEmail, IcInsta, IcZap, Logo } from "./Icones";
 
 export function Rodape({ loja, categorias }: { loja: ConfigLoja; categorias: Categoria[] }) {
@@ -9,7 +9,7 @@ export function Rodape({ loja, categorias }: { loja: ConfigLoja; categorias: Cat
     <footer className="rodape">
       <div className="cont">
         <div className="rodape-grid">
-          <div>
+          <div className="rodape-marca">
             <Logo />
             <p style={{ color: "var(--suave)", marginTop: 14, maxWidth: "34ch" }}>Semijoias delicadas para revelar o que você tem de mais valioso: a sua identidade.</p>
           </div>
@@ -33,7 +33,7 @@ export function Rodape({ loja, categorias }: { loja: ConfigLoja; categorias: Cat
           <div>
             <h3>Atendimento</h3>
             <ul>
-              <li><a href={linkWhats(loja.whatsapp, "Olá, Beyond Ruby! Vim pelo site.")} target="_blank" rel="noopener" style={{ display: "inline-flex", gap: 8, alignItems: "center" }}><IcZap style={{ color: "#1f9d55" }} /> {foneBonito(loja.whatsapp)}</a></li>
+              <li><a href={linkWhats(loja.whatsapp, MENSAGEM_PADRAO)} target="_blank" rel="noopener" style={{ display: "inline-flex", gap: 8, alignItems: "center" }}><IcZap style={{ color: "#1f9d55" }} /> {foneBonito(loja.whatsapp)}</a></li>
               {insta && <li><a href={`https://instagram.com/${insta}`} target="_blank" rel="noopener" style={{ display: "inline-flex", gap: 8, alignItems: "center" }}><IcInsta /> @{insta}</a></li>}
               <li><a href={`mailto:${loja.email}`} style={{ display: "inline-flex", gap: 8, alignItems: "center" }}><IcEmail /> {loja.email}</a></li>
             </ul>

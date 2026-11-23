@@ -64,7 +64,7 @@ export function Acesso({ children }: { children: ReactNode }) {
       <div className="pn">
         <header className="pn-topo">
           <div className="pn-topo-in">
-            <Link href="/painel" className="marca"><span style={{ width: 30, height: 16, display: "block" }}><Coroa /></span><b>BEYOND RUBY</b><small>Painel</small></Link>
+            <Link href="/painel" className="marca"><Coroa /><b>BEYOND RUBY</b><small>Painel</small></Link>
             <div className="dir">
               <a href="/" target="_blank" rel="noopener">Ver loja</a>
               <button onClick={() => db.auth.signOut()}>Sair</button>
@@ -106,7 +106,7 @@ function Login() {
   return (
     <div className="pn-login">
       <form onSubmit={entrar}>
-        <div className="marca"><span style={{ width: 44, height: 23, display: "block" }}><Coroa /></span><b>BEYOND RUBY</b></div>
+        <div className="marca"><Coroa /><b>BEYOND RUBY</b></div>
         <p style={{ textAlign: "center", color: "var(--suave)", fontSize: 13, marginTop: -6 }}>Painel da loja</p>
         <div className="campo"><label htmlFor="em">E-mail</label><input id="em" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
         <div className="campo"><label htmlFor="se">Senha</label><input id="se" type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} /></div>

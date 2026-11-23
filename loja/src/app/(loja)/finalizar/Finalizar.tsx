@@ -11,7 +11,10 @@ import type { ConfigFrete } from "@/lib/tipos";
 
 const mascaraCep = (v: string) => v.replace(/\D/g, "").slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
 const mascaraFone = (v: string) => {
-  const d = v.replace(/\D/g, "").slice(0, 11);
+  // aceita o número digitado com o 55 do Brasil na frente: "5531999999999" vira "(31) 99999-9999"
+  let d = v.replace(/\D/g, "").slice(0, 13);
+  if (d.length > 11 && d.startsWith("55")) d = d.slice(2);
+  d = d.slice(0, 11);
   if (d.length <= 2) return d.length ? `(${d}` : "";
   if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
   return `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}`;

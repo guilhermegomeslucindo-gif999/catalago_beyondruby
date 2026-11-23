@@ -4,6 +4,7 @@ import { Dicas } from "@/components/Dicas";
 import { IcCaminhao, IcCartao, IcEscudo, IcTroca } from "@/components/Icones";
 import { getCategorias, getConfigs, getMaisVendidas, getProdutos } from "@/lib/dados";
 import { moeda } from "@/lib/formato";
+import type { Destaque } from "@/lib/tipos";
 
 export const revalidate = 60;
 
@@ -35,7 +36,7 @@ export default async function Inicio() {
         <div className="cont">
           <div className="cab-sec"><h2>Escolha por categoria</h2><p>Peças para usar sozinhas ou em composição</p></div>
           <div className="cats">
-            {categorias.map((c) => (
+            {categorias.filter((c) => c.na_capa !== false).map((c) => (
               <Link key={c.slug} href={`/categoria/${c.slug}`} className="cat">
                 {c.imagem_url && <img src={c.imagem_url} alt="" loading="lazy" width={600} height={800} />}
                 <span><b>{c.nome}</b><em>Ver peças</em></span>
@@ -48,23 +49,14 @@ export default async function Inicio() {
       <section className="secao creme">
         <div className="cont">
           <div className="cab-sec cab-linha">
-            <div><h2>Mais amadas</h2><p>As preferidas de quem já brilha com a gente</p></div>
+            <div><h2>Mais vendidas</h2><p>As peças que nossas clientes mais escolhem</p></div>
             <Link href="/loja" className="ver-tudo">Ver tudo</Link>
           </div>
           <div className="trilho">{maisVendidas.map((p, i) => <CardPeca key={p.id} p={p} whatsapp={loja.whatsapp} prioridade={i < 2} />)}</div>
         </div>
       </section>
 
-      {d1 && (
-        <section className="duplo">
-          {[d1, d2].filter(Boolean).map((d) => (
-            <div key={d.titulo} className="destaque">
-              <img src={d.imagem} alt="" loading="lazy" />
-              <div><h2>{d.titulo}</h2><p>{d.texto}</p><Link href={d.link} className="bt bt-claro">{d.botao}</Link></div>
-            </div>
-          ))}
-        </section>
-      )}
+      {d1 && <FaixaDestaque d={d1} />}
 
       <section className="secao">
         <div className="cont">
@@ -75,6 +67,8 @@ export default async function Inicio() {
           <div className="trilho">{novidades.map((p) => <CardPeca key={p.id} p={p} whatsapp={loja.whatsapp} />)}</div>
         </div>
       </section>
+
+      {d2 && <FaixaDestaque d={d2} />}
 
       <section className="secao creme" style={{ paddingTop: 44, paddingBottom: 44 }}>
         <div className="cont vantagens">
@@ -93,5 +87,14 @@ export default async function Inicio() {
         </div>
       </section>
     </>
+  );
+}
+
+function FaixaDestaque({ d }: { d: Destaque }) {
+  return (
+    <section className="destaque largo">
+      <img src={d.imagem} alt="" loading="lazy" />
+      <div><h2>{d.titulo}</h2><p>{d.texto}</p><Link href={d.link} className="bt bt-claro">{d.botao}</Link></div>
+    </section>
   );
 }
