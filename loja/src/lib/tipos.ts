@@ -47,3 +47,5 @@ export type ConfigLoja = {
 
 export type Destaque = { imagem: string; titulo: string; texto: string; link: string; botao: string };
 export type ConfigHome = { hero: string; titulo: string; subtitulo: string; destaques: Destaque[] };
+
+export type ConfigClube = { ativo: boolean; valor: number; minimo: number; cashback_pct: number; validade_dias: number; atraso_segundos: number };

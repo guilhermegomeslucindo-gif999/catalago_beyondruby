@@ -1,11 +1,29 @@
 import Link from "next/link";
-import type { Categoria, ConfigLoja } from "@/lib/tipos";
-import { foneBonito, linkWhats, MENSAGEM_PADRAO } from "@/lib/formato";
+import type { Categoria, ConfigClube, ConfigLoja } from "@/lib/tipos";
+import { BotaoClube } from "./Clube";
+import { foneBonito, linkWhats, MENSAGEM_PADRAO, moeda } from "@/lib/formato";
 import { IcEmail, IcInsta, IcZap, Logo } from "./Icones";
 
-export function Rodape({ loja, categorias }: { loja: ConfigLoja; categorias: Categoria[] }) {
+export function Rodape({ loja, categorias, clube }: { loja: ConfigLoja; categorias: Categoria[]; clube?: ConfigClube }) {
   const insta = loja.instagram?.replace("@", "");
+  const v = (n: number) => moeda(n).replace(",00", "");
   return (
+    <>
+    {clube?.ativo && (
+      <section className="clube-faixa" aria-label="Clube Beyond Ruby">
+        <div className="cont">
+          <span style={{ display: "block", color: "var(--pele)" }}><svg className="coroa-f" viewBox="700 180 2530 1320" aria-hidden><use href="/marca.svg#logo-g" /></svg></span>
+          <div>
+            <h2>Clube Beyond Ruby</h2>
+            <p style={{ marginTop: 6 }}><b>{v(clube.valor)} OFF</b> na sua primeira compra acima de {v(clube.minimo)} e <b>{clube.cashback_pct}% de volta</b> em crédito nas compras seguintes.</p>
+          </div>
+          <div className="acoes">
+            <BotaoClube className="bt bt-claro">Quero participar</BotaoClube>
+            <Link href="/clube" className="bt bt-claro" style={{ borderColor: "transparent" }}>Como funciona</Link>
+          </div>
+        </div>
+      </section>
+    )}
     <footer className="rodape">
       <div className="cont">
         <div className="rodape-grid">
@@ -47,5 +65,6 @@ export function Rodape({ loja, categorias }: { loja: ConfigLoja; categorias: Cat
         </div>
       </div>
     </footer>
+    </>
   );
 }

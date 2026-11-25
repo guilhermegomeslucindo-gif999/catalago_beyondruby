@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { supabasePublico } from "./supabase";
-import type { Categoria, ConfigFrete, ConfigHome, ConfigLoja, Produto } from "./tipos";
+import type { Categoria, ConfigClube, ConfigFrete, ConfigHome, ConfigLoja, Produto } from "./tipos";
 
 const CAMPOS = "id,slug,nome,categoria,tom,preco,descricao,detalhes,status,novidade,ordem,estoque,criado_em,produto_imagens(url,alt,ordem)";
 
@@ -40,7 +40,8 @@ export const getConfigs = cache(async () => {
   const { data, error } = await supabasePublico().from("configuracoes").select("chave,valor");
   if (error) throw error;
   const m = Object.fromEntries((data || []).map((r) => [r.chave, r.valor]));
-  return { loja: m.loja as ConfigLoja, frete: m.frete as ConfigFrete, home: m.home as ConfigHome };
+  const clube: ConfigClube = { ativo: false, valor: 10, minimo: 99, cashback_pct: 5, validade_dias: 90, atraso_segundos: 15, ...(m.clube || {}) };
+  return { loja: m.loja as ConfigLoja, frete: m.frete as ConfigFrete, home: m.home as ConfigHome, clube };
 });
 
 export const getMaisVendidas = cache(async (): Promise<string[]> => {

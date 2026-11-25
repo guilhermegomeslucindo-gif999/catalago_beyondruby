@@ -393,3 +393,104 @@ body.tem-barra .flutua{bottom:calc(86px + var(--safe-b))}
 .vt-painel-rodape{grid-template-columns:1fr 1.4fr;display:grid}
 .vt-painel-rodape .bt{min-height:48px;padding:0 10px}
 
+
+/* ---------- Clube Beyond Ruby ---------- */
+.clube-veu{position:fixed;inset:0;background:rgba(43,6,16,.5);z-index:95;opacity:0;pointer-events:none;transition:opacity .3s}
+.clube-veu.on{opacity:1;pointer-events:auto}
+.clube-janela{position:fixed;z-index:96;background:#fff;display:grid;left:0;right:0;bottom:0;max-height:92svh;overflow-y:auto;border-radius:18px 18px 0 0;box-shadow:0 -10px 40px rgba(43,6,16,.2);transform:translateY(105%);transition:transform .4s cubic-bezier(.2,.7,.2,1),visibility 0s .4s;visibility:hidden}
+.clube-janela.on{transform:none;visibility:visible;transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.clube-foto{display:none}
+.clube-corpo{position:relative;padding:26px 20px calc(20px + var(--safe-b))}
+.clube-corpo::before{content:"";position:absolute;top:8px;left:50%;width:40px;height:4px;border-radius:9px;background:var(--linha-2);transform:translateX(-50%)}
+.clube-fechar{position:absolute;top:10px;right:10px;width:40px;height:40px;display:grid;place-items:center;color:var(--suave);border-radius:50%}
+.clube-fechar:hover{background:var(--areia);color:var(--vinho)}
+.clube-fechar svg{width:20px;height:20px}
+.clube-selo{display:block;font-size:10.5px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--vinho-3);margin-bottom:6px}
+.clube-corpo h2{font-family:var(--f-titulo);font-weight:400;font-size:26px;line-height:1.15;color:var(--vinho);margin-bottom:12px;padding-right:30px}
+.clube-beneficios{list-style:none;display:grid;gap:6px;margin-bottom:16px;font-size:13.5px;color:var(--tinta)}
+.clube-beneficios li{display:flex;gap:8px;align-items:flex-start}
+.clube-beneficios svg{width:16px;height:16px;color:var(--ok);flex:none;margin-top:2px}
+.clube-beneficios b{color:var(--vinho)}
+.clube-campos{display:grid;gap:8px}
+.clube-campos input{width:100%;height:46px;border:1px solid var(--linha-2);padding:0 13px;font-size:16px;outline:none;background:#fff;transition:border-color .2s}
+.clube-campos input:focus{border-color:var(--vinho)}
+.clube-aceite{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;color:var(--suave);margin:12px 0 14px;cursor:pointer;line-height:1.45}
+.clube-aceite input{accent-color:var(--vinho);width:16px;height:16px;margin-top:1px;flex:none}
+.clube-erro{background:#fbe9ec;color:var(--erro);font-size:13px;font-weight:600;padding:9px 11px;margin-bottom:10px}
+.clube-links{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12.5px}
+.clube-links a{color:var(--vinho);text-decoration:underline}
+.clube-links button{color:var(--suave)}
+.clube-ok{text-align:center;display:grid;gap:8px;justify-items:center}
+.clube-ok h2{padding:0}
+.clube-ok p{font-size:14px;color:var(--tinta);max-width:36ch}
+.clube-ok-ic{width:48px;height:48px;border-radius:50%;background:#e3f3ea;color:var(--ok);display:grid;place-items:center}
+.clube-ok-ic svg{width:24px;height:24px}
+.clube-codigo{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;max-width:320px;padding:12px 14px;border:1.5px dashed var(--vinho);background:var(--creme);font-family:var(--f-nome);font-weight:600;font-size:22px;letter-spacing:.12em;color:var(--vinho);margin:4px 0}
+.clube-codigo span{font-family:var(--f-texto);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--suave)}
+.clube-nota{font-size:12.5px!important;color:var(--suave)!important;margin-bottom:6px}
+@media (min-width:760px){
+  .clube-janela{left:50%;top:50%;right:auto;bottom:auto;width:min(780px,calc(100vw - 48px));grid-template-columns:1fr 1.15fr;border-radius:0;transform:translate(-50%,-46%) scale(.98);opacity:0;transition:transform .35s,opacity .35s,visibility 0s .35s;box-shadow:0 30px 80px rgba(43,6,16,.3)}
+  .clube-janela.on{transform:translate(-50%,-50%);opacity:1;transition:transform .35s,opacity .35s}
+  .clube-foto{display:block;position:relative;background:var(--vinho);min-height:100%}
+  .clube-foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.92}
+  .clube-foto::after{content:"";position:absolute;inset:14px;border:1px solid rgba(255,255,255,.5)}
+  .clube-foto span{position:absolute;left:0;right:0;bottom:30px;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff;z-index:1;text-shadow:0 1px 10px rgba(0,0,0,.35)}
+  .clube-foto svg{width:46px;height:24px}
+  .clube-foto b{font-family:var(--f-caps);font-weight:500;font-size:16px;letter-spacing:.18em}
+  .clube-corpo{padding:34px 32px 26px}
+  .clube-corpo::before{display:none}
+  .clube-corpo h2{font-size:30px}
+}
+
+/* lembrete na sacola */
+.clube-lembrete{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 20px;background:var(--vinho);color:var(--pele);font-size:12.5px;line-height:1.4}
+.clube-lembrete svg{width:28px;height:15px;flex:none}
+.clube-lembrete b{color:#fff}
+.clube-lembrete.ok{background:#eef7f1;color:var(--ok)}
+.clube-lembrete.ok b{color:var(--ok)}
+
+/* faixa no rodapé */
+.clube-faixa{background:var(--vinho);color:var(--pele)}
+.clube-faixa .cont{display:grid;gap:16px;padding-top:34px;padding-bottom:34px;text-align:center;justify-items:center}
+.clube-faixa svg.coroa-f{width:44px;height:23px}
+.clube-faixa h2{font-family:var(--f-caps);font-weight:500;font-size:clamp(18px,4.6vw,24px);letter-spacing:.12em}
+.clube-faixa p{font-size:14px;color:var(--pele-2);max-width:46ch}
+.clube-faixa p b{color:#fff}
+.clube-faixa .acoes{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+@media (min-width:900px){.clube-faixa .cont{grid-template-columns:auto 1fr auto;text-align:left;justify-items:start;align-items:center;gap:28px}}
+
+/* página Como funciona */
+.clube-hero{background:var(--vinho);color:var(--pele);text-align:center;padding:52px 0 46px}
+.clube-hero svg{width:56px;height:30px;margin:0 auto 12px}
+.clube-hero small{display:block;font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--pele-2)}
+.clube-hero h1{font-family:var(--f-titulo);font-weight:400;font-size:clamp(30px,7vw,46px);line-height:1.1;margin:10px auto 12px;max-width:18ch}
+.clube-hero p{color:var(--pele-2);max-width:44ch;margin:0 auto 22px}
+.clube-passos{display:grid;gap:12px;margin-top:-26px}
+@media (min-width:860px){.clube-passos{grid-template-columns:repeat(3,1fr);gap:16px}}
+.clube-passo{background:#fff;border:1px solid var(--linha);padding:22px 20px;box-shadow:var(--sombra)}
+.clube-passo .n{width:34px;height:34px;border-radius:50%;background:var(--vinho);color:var(--pele);display:grid;place-items:center;font-weight:700;font-size:14px;margin-bottom:12px}
+.clube-passo h2{font-family:var(--f-caps);font-weight:500;font-size:16px;letter-spacing:.08em;color:var(--vinho);margin-bottom:6px}
+.clube-passo p{font-size:14px;color:var(--tinta)}
+.clube-exemplo{background:var(--creme);border:1px solid var(--linha);padding:20px;margin-top:28px;font-size:14px}
+.clube-exemplo h2{font-family:var(--f-caps);font-weight:500;font-size:15px;letter-spacing:.1em;color:var(--vinho);margin-bottom:10px}
+.clube-exemplo ol{padding-left:18px;display:grid;gap:6px}
+
+/* finalização: clube */
+.aceite-novidades{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--suave);cursor:pointer;line-height:1.45}
+.aceite-novidades input{accent-color:var(--vinho);width:16px;height:16px;margin-top:2px;flex:none}
+.cupom-bloco{display:grid;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--linha)}
+.cupom-abrir{justify-self:start;font-size:13px;color:var(--vinho);text-decoration:underline}
+.cupom-campo{display:flex;gap:8px}
+.cupom-campo input{flex:1;min-width:0;height:44px;border:1px solid var(--linha-2);padding:0 12px;font-size:15px;letter-spacing:.06em;outline:none}
+.cupom-campo input:focus{border-color:var(--vinho)}
+.cupom-campo .bt{min-height:44px;padding:0 16px}
+.cupom-linha{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;background:var(--areia);font-size:13px}
+.cupom-linha.ok{background:#eef7f1;color:var(--ok)}
+.cupom-linha small{display:block;color:var(--suave);font-size:12px;margin-top:2px}
+.cupom-linha button{font-size:12px;color:var(--suave);text-decoration:underline;flex:none}
+.credito-linha{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid #cfe7d8;background:#f4fbf6;font-size:13px;cursor:pointer}
+.credito-linha input{accent-color:var(--ok);width:17px;height:17px;margin-top:1px;flex:none}
+.credito-linha b{color:var(--ok)}
+.credito-linha small{display:block;color:var(--suave);font-size:12px;margin-top:2px}
+.linha-total.desconto span:last-child{color:var(--ok);font-weight:600}
+.cashback-aviso{font-size:12.5px;color:var(--ok);background:#f4fbf6;padding:9px 11px;line-height:1.45}

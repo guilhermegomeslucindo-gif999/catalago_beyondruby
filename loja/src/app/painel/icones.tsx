@@ -24,3 +24,6 @@ export const ICheck = (p: P) => <svg {...b(p)}><path d="m5 12.5 4.5 4.5L19 7.5" 
 export const IAlerta = (p: P) => <svg {...b(p)}><path d="M12 4 2.5 20h19L12 4Z" /><path d="M12 10v4M12 17h.01" /></svg>;
 export const IZap = (p: P) => <svg {...b(p)}><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4.1A8 8 0 1 1 20 11.5Z" /></svg>;
 export const IOlho = (p: P) => <svg {...b(p)}><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle cx="12" cy="12" r="2.8" /></svg>;
+export const IClientes = (p: P) => <svg {...b(p)}><circle cx="9" cy="8" r="3.2" /><path d="M3 19.5c.6-3.3 3-5.2 6-5.2s5.4 1.9 6 5.2" /><path d="M15.5 4.9a3.2 3.2 0 0 1 0 6.2M17.5 14.6c2 .6 3.2 2.3 3.5 4.9" /></svg>;
+export const IBaixar = (p: P) => <svg {...b(p)}><path d="M12 4v11M7 10l5 5 5-5M4 19h16" /></svg>;
+export const ICoracao = (p: P) => <svg {...b(p)}><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10Z" /></svg>;

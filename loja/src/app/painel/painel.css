@@ -22,8 +22,8 @@
 .pn-lateral .pn-marca{gap:8px}
 .pn-lateral .pn-marca b{font-size:13px;letter-spacing:.11em}
 .pn-marca small{font-size:10.5px;font-weight:600;color:var(--pn-fraco);letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--pn-borda);border-radius:99px;padding:2px 7px}
-.pn-abas{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--pn-borda);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:var(--safe-b)}
-.pn-abas a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;font-size:11px;font-weight:600;color:var(--pn-fraco);position:relative}
+.pn-abas{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--pn-borda);display:grid;grid-template-columns:repeat(5,1fr);padding-bottom:var(--safe-b)}
+.pn-abas a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 8px;font-size:10.5px;font-weight:600;color:var(--pn-fraco);position:relative}
 .pn-abas a svg{width:22px;height:22px}
 .pn-abas a[aria-current=page]{color:var(--pn-acento)}
 .pn-abas .bolha{position:absolute;top:5px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:99px;background:var(--pn-acento);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px}

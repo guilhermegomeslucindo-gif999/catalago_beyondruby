@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { Coroa, Logo } from "@/components/Icones";
 import { supabaseNavegador } from "@/lib/supabase";
-import { IConfig, ILoja, IPecas, IPedidos, IResumo } from "./icones";
+import { IClientes, IConfig, ILoja, IPecas, IPedidos, IResumo } from "./icones";
 import "./painel.css";
 
 type Ctx = { db: SupabaseClient; sessao: Session; atualizarSite: () => Promise<void>; atualizarContadores: () => void };
@@ -83,6 +83,7 @@ export function Acesso({ children }: { children: ReactNode }) {
     { href: "/painel", nome: "Resumo", Ic: IResumo },
     { href: "/painel/pedidos", nome: "Pedidos", Ic: IPedidos, bolha: aEnviar },
     { href: "/painel/pecas", nome: "Peças", Ic: IPecas },
+    { href: "/painel/clientes", nome: "Clientes", Ic: IClientes },
     { href: "/painel/configuracoes", nome: "Ajustes", Ic: IConfig },
   ];
   const ativo = (href: string) => (href === "/painel" ? caminho === href : caminho.startsWith(href));

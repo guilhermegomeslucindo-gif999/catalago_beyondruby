@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ConfigFrete, ConfigHome, ConfigLoja, RegiaoUber } from "@/lib/tipos";
+import type { ConfigClube, ConfigFrete, ConfigHome, ConfigLoja, RegiaoUber } from "@/lib/tipos";
 import { slugify } from "@/lib/formato";
 import { usePainel } from "../Acesso";
 import { ILixo, IMais, IUpload } from "../icones";
@@ -23,6 +23,7 @@ export default function Configuracoes() {
   const [loja, setLoja] = useState<ConfigLoja | null>(null);
   const [frete, setFrete] = useState<ConfigFrete | null>(null);
   const [home, setHome] = useState<ConfigHome | null>(null);
+  const [clube, setClube] = useState<ConfigClube | null>(null);
   const [msg, setMsg] = useState<{ t: "ok" | "erro" | "info"; m: string } | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [mudou, setMudou] = useState(false);
@@ -30,15 +31,16 @@ export default function Configuracoes() {
   useEffect(() => {
     db.from("configuracoes").select("chave,valor").then(({ data }) => {
       const m = Object.fromEntries((data || []).map((r) => [r.chave, r.valor]));
-      setLoja(m.loja); setFrete(m.frete); setHome(m.home);
+      setLoja(m.loja); setFrete(m.frete); setHome(m.home); setClube(m.clube);
     });
   }, [db]);
 
-  if (!loja || !frete || !home) return <div className="pn-carregando"><div className="giro" />Carregando…</div>;
+  if (!loja || !frete || !home || !clube) return <div className="pn-carregando"><div className="giro" />Carregando…</div>;
 
   const setL = <K extends keyof ConfigLoja>(k: K, v: ConfigLoja[K]) => { setLoja({ ...loja, [k]: v }); setMudou(true); };
   const setF = (f: ConfigFrete) => { setFrete(f); setMudou(true); };
   const setH = (h: ConfigHome) => { setHome(h); setMudou(true); };
+  const setC = (c: Partial<ConfigClube>) => { setClube({ ...clube, ...c }); setMudou(true); };
   const setRegiao = (i: number, r: Partial<RegiaoUber>) => setF({ ...frete, uber: { ...frete.uber, regioes: frete.uber.regioes.map((x, k) => (k === i ? { ...x, ...r } : x)) } });
 
   async function salvar() {
@@ -52,6 +54,8 @@ export default function Configuracoes() {
       { chave: "frete", valor: { ...frete!, frete_gratis_minimo: num(String(frete!.frete_gratis_minimo)), uber: { ...frete!.uber, regioes },
         correios: { ...frete!.correios, tabela: Object.fromEntries(ZONAS.map(([z]) => [z, { pac: num(String(frete!.correios.tabela[z].pac)), sedex: num(String(frete!.correios.tabela[z].sedex)) }])) } } },
       { chave: "home", valor: home },
+      { chave: "clube", valor: { ...clube!, valor: num(String(clube!.valor)), minimo: num(String(clube!.minimo)), cashback_pct: num(String(clube!.cashback_pct)),
+        validade_dias: Math.max(1, Math.round(num(String(clube!.validade_dias)))), atraso_segundos: Math.max(3, Math.round(num(String(clube!.atraso_segundos)))) } },
     ];
     const { error } = await db.from("configuracoes").upsert(linhas);
     setSalvando(false);
@@ -89,6 +93,17 @@ export default function Configuracoes() {
           </div>
         ))}
         <button className="pn-bt pequeno" style={{ justifySelf: "start" }} onClick={() => setL("avisos", [...loja.avisos, ""])}><IMais />Adicionar aviso</button>
+      </Secao>
+
+      <Secao titulo="Clube Beyond Ruby" texto="Cupom de boas-vindas e cashback. A janela de cadastro aparece sozinha para quem ainda não é do Clube.">
+        {ativo("Clube ativo", clube.ativo, (v) => setC({ ativo: v }))}
+        <div className="pn-2col">
+          <div className="pn-campo"><label htmlFor="cv">Cupom de boas-vindas</label><div className="pn-prefixo"><span>R$</span><input id="cv" inputMode="decimal" value={String(clube.valor)} onChange={(e) => setC({ valor: e.target.value as unknown as number })} /></div></div>
+          <div className="pn-campo"><label htmlFor="cm">Vale em compras a partir de</label><div className="pn-prefixo"><span>R$</span><input id="cm" inputMode="decimal" value={String(clube.minimo)} onChange={(e) => setC({ minimo: e.target.value as unknown as number })} /></div></div>
+          <div className="pn-campo"><label htmlFor="cp">Cashback</label><div className="pn-prefixo"><span>%</span><input id="cp" inputMode="decimal" value={String(clube.cashback_pct)} onChange={(e) => setC({ cashback_pct: e.target.value as unknown as number })} /></div><span className="ajuda">Do valor das peças, em toda compra que não usou o cupom.</span></div>
+          <div className="pn-campo"><label htmlFor="cd">Validade do crédito</label><div className="pn-prefixo"><span>dias</span><input id="cd" inputMode="numeric" value={String(clube.validade_dias)} onChange={(e) => setC({ validade_dias: e.target.value as unknown as number })} /></div><span className="ajuda">Contada a partir da entrega do pedido.</span></div>
+          <div className="pn-campo"><label htmlFor="ca">Janela aparece depois de</label><div className="pn-prefixo"><span>seg.</span><input id="ca" inputMode="numeric" value={String(clube.atraso_segundos)} onChange={(e) => setC({ atraso_segundos: e.target.value as unknown as number })} /></div></div>
+        </div>
       </Secao>
 
       <Secao titulo="Contato" texto="Usados nos botões de WhatsApp, no menu e no rodapé.">

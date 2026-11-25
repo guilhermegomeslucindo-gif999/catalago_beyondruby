@@ -14,6 +14,7 @@ type PedidoAdm = {
   cliente_nome: string; cliente_email: string; cliente_whatsapp: string;
   entrega_tipo: string; entrega_regiao: string | null; endereco: Record<string, string> | null;
   subtotal: number; frete: number; total: number; observacao: string | null; rastreio: string | null;
+  cupom: string | null; desconto: number; credito_usado: number;
   ip_capture_method: string | null; ip_parcelas: number | null; ip_receipt_url: string | null; ip_valor_pago: number | null;
   pedido_itens: Item[];
 };
@@ -197,6 +198,8 @@ function Detalhe({ p, onFechar, onMudou }: { p: PedidoAdm; onFechar: () => void;
             <div className="pn-linhas">
               {p.pedido_itens.map((i, k) => <div key={k}><span>{i.quantidade}× {i.nome}</span><span className="num">{moeda(i.preco * i.quantidade)}</span></div>)}
               <div><span className="rot">Subtotal</span><span>{moeda(p.subtotal)}</span></div>
+              {Number(p.desconto) > 0 && <div><span className="rot">Cupom do Clube ({p.cupom})</span><span style={{ color: "var(--pn-ok)" }}>− {moeda(p.desconto)}</span></div>}
+              {Number(p.credito_usado) > 0 && <div><span className="rot">Crédito do Clube</span><span style={{ color: "var(--pn-ok)" }}>− {moeda(p.credito_usado)}</span></div>}
               <div><span className="rot">Frete · {NOME_ENTREGA[p.entrega_tipo]}{p.entrega_regiao && p.entrega_tipo === "uber" ? ` (${p.entrega_regiao})` : ""}</span><span>{Number(p.frete) ? moeda(p.frete) : "Grátis"}</span></div>
               <div className="total"><span>Total</span><span>{moeda(p.total)}</span></div>
             </div>

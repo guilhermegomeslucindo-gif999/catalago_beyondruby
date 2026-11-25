@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { apagarCupom, lerCupom } from "@/components/Clube";
 import { IcCadeado } from "@/components/Icones";
 import { LinhaItem, ProgressoFrete, useSacola } from "@/components/Sacola";
 import { moeda } from "@/lib/formato";
 import { opcoesEntrega, type TipoEntrega } from "@/lib/frete";
 import { FUNCOES, SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
-import type { ConfigFrete } from "@/lib/tipos";
+import type { ConfigClube, ConfigFrete } from "@/lib/tipos";
 
 const mascaraCep = (v: string) => v.replace(/\D/g, "").slice(0, 8).replace(/^(\d{5})(\d)/, "$1-$2");
 const mascaraFone = (v: string) => {
@@ -23,7 +24,7 @@ const mascaraFone = (v: string) => {
 type Form = { nome: string; email: string; whatsapp: string; cep: string; rua: string; numero: string; complemento: string; bairro: string; cidade: string; uf: string; observacao: string };
 const VAZIO: Form = { nome: "", email: "", whatsapp: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "", observacao: "" };
 
-export function Finalizar({ frete, loja }: { frete: ConfigFrete; loja: { responsavel: string; cnpj: string; whatsapp: string } }) {
+export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { responsavel: string; cnpj: string; whatsapp: string }; clube: ConfigClube }) {
   const { itens, total, pronta, substituir } = useSacola();
   const [f, setF] = useState<Form>(VAZIO);
   const [tipo, setTipo] = useState<TipoEntrega | "">("");
@@ -32,6 +33,13 @@ export function Finalizar({ frete, loja }: { frete: ConfigFrete; loja: { respons
   const [aviso, setAviso] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [buscandoCep, setBuscandoCep] = useState(false);
+  // Clube: cupom de boas-vindas, crédito e autorização de novidades
+  const [cupom, setCupom] = useState("");
+  const [editCupom, setEditCupom] = useState(false);
+  const [novidades, setNovidades] = useState(false);
+  const [saldo, setSaldo] = useState<{ saldo: number; vence_em: string | null } | null>(null);
+  const [usarCredito, setUsarCredito] = useState(true);
+  useEffect(() => { const c = lerCupom(); if (c) setCupom(c); }, []);
 
   // lembra os dados da cliente neste aparelho
   useEffect(() => {
@@ -80,7 +88,27 @@ export function Finalizar({ frete, loja }: { frete: ConfigFrete; loja: { respons
   const escolhida = opcoes.find((o) => o.tipo === tipo);
   const valorFrete = escolhida?.valor ?? null;
   const precisaEndereco = tipo && tipo !== "retirada";
-  const totalGeral = total + (valorFrete ?? 0);
+  // consulta o crédito do Clube quando e-mail e WhatsApp estão preenchidos
+  const zapDig = f.whatsapp.replace(/\D/g, "");
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
+  useEffect(() => {
+    if (!clube.ativo || !emailOk || zapDig.length < 10) { setSaldo(null); return; }
+    const t = setTimeout(() => {
+      fetch(`${SUPABASE_URL}/rest/v1/rpc/saldo_credito`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_email: f.email.trim(), p_whatsapp: zapDig }),
+      }).then((r) => (r.ok ? r.json() : null)).then((d) => setSaldo(d && Number(d.saldo) > 0 ? { saldo: Number(d.saldo), vence_em: d.vence_em } : null)).catch(() => {});
+    }, 600);
+    return () => clearTimeout(t);
+  }, [clube.ativo, emailOk, f.email, zapDig]);
+
+  const cupomLimpo = cupom.trim().toUpperCase();
+  const cupomValido = !!cupomLimpo && clube.ativo && total >= clube.minimo;
+  const desconto = cupomValido ? Math.min(clube.valor, total) : 0;
+  const credito = saldo && usarCredito ? Math.max(0, Math.min(saldo.saldo, total - desconto - 1)) : 0;
+  const totalGeral = total - desconto - credito + (valorFrete ?? 0);
+  const cashbackPrevisto = clube.ativo && !cupomValido ? Math.round((total - credito) * clube.cashback_pct) / 100 : 0;
 
   async function pagar(e: React.FormEvent) {
     e.preventDefault();
@@ -96,7 +124,9 @@ export function Finalizar({ frete, loja }: { frete: ConfigFrete; loja: { respons
         headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
         body: JSON.stringify({
           itens: itens.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
-          cliente: { nome: f.nome, email: f.email, whatsapp: f.whatsapp },
+          cliente: { nome: f.nome, email: f.email, whatsapp: f.whatsapp, aceita_novidades: novidades },
+          cupom: cupomValido ? cupomLimpo : "",
+          usar_credito: credito > 0,
           entrega: { tipo, regiao, cep: f.cep, endereco: { rua: f.rua, numero: f.numero, complemento: f.complemento, bairro: f.bairro, cidade: f.cidade, uf: f.uf } },
           observacao: f.observacao,
           origem: window.location.origin,
@@ -136,6 +166,7 @@ export function Finalizar({ frete, loja }: { frete: ConfigFrete; loja: { respons
                 <div className="campo"><label htmlFor="email">E-mail</label><input id="email" type="email" required autoComplete="email" inputMode="email" value={f.email} onChange={set("email")} /></div>
                 <div className="campo"><label htmlFor="whats">WhatsApp</label><input id="whats" type="tel" required autoComplete="tel-national" inputMode="tel" placeholder="(31) 99999-9999" value={f.whatsapp} onChange={set("whatsapp")} /></div>
               </div>
+              <label className="aceite-novidades"><input type="checkbox" checked={novidades} onChange={(e) => setNovidades(e.target.checked)} />Quero receber novidades e ofertas da Beyond Ruby por e-mail</label>
             </div>
           </section>
 
@@ -198,10 +229,37 @@ export function Finalizar({ frete, loja }: { frete: ConfigFrete; loja: { respons
           </section>
           <ProgressoFrete total={total} minimo={frete.frete_gratis_minimo} />
           <section className="bloco" style={{ marginTop: 0, display: "grid", gap: 10 }}>
+            {clube.ativo && (
+              <div className="cupom-bloco">
+                {cupomLimpo && !editCupom ? (
+                  <div className={`cupom-linha${cupomValido ? " ok" : ""}`}>
+                    <span><b>Cupom {cupomLimpo}</b>{cupomValido ? ` · ${moeda(clube.valor).replace(",00", "")} OFF` : <small>Vale a partir de {moeda(clube.minimo)} em peças. Faltam {moeda(clube.minimo - total)}.</small>}</span>
+                    <button type="button" onClick={() => { setCupom(""); apagarCupom(); }}>Remover</button>
+                  </div>
+                ) : editCupom ? (
+                  <div className="cupom-campo">
+                    <input autoFocus placeholder="Código do cupom" value={cupom} onChange={(e) => setCupom(e.target.value.toUpperCase())} aria-label="Código do cupom" />
+                    <button type="button" className="bt bt-vazado" onClick={() => setEditCupom(false)}>Aplicar</button>
+                  </div>
+                ) : (
+                  <button type="button" className="cupom-abrir" onClick={() => setEditCupom(true)}>Tem um cupom?</button>
+                )}
+                {saldo && (
+                  <label className="credito-linha">
+                    <input type="checkbox" checked={usarCredito} onChange={(e) => setUsarCredito(e.target.checked)} />
+                    <span><b>Usar {moeda(Math.min(saldo.saldo, Math.max(0, total - desconto - 1)))} de crédito do Clube</b>
+                      <small>Saldo de {moeda(saldo.saldo)}{saldo.vence_em ? ` · vence em ${new Date(saldo.vence_em).toLocaleDateString("pt-BR")}` : ""}</small></span>
+                  </label>
+                )}
+              </div>
+            )}
             <div className="linha-total" style={{ fontSize: 14 }}><span>Subtotal</span><span>{moeda(total)}</span></div>
+            {desconto > 0 && <div className="linha-total desconto" style={{ fontSize: 14 }}><span>Cupom do Clube</span><span>− {moeda(desconto)}</span></div>}
+            {credito > 0 && <div className="linha-total desconto" style={{ fontSize: 14 }}><span>Crédito do Clube</span><span>− {moeda(credito)}</span></div>}
             <div className="linha-total" style={{ fontSize: 14 }}><span>Frete</span><span>{!tipo ? "—" : valorFrete === null ? "—" : valorFrete === 0 ? "Grátis" : moeda(valorFrete)}</span></div>
             <div className="linha-total" style={{ borderTop: "1px solid var(--linha)", paddingTop: 10 }}><span>Total</span><b>{moeda(totalGeral)}</b></div>
-            {erro && <p className="erro-msg" role="alert">{erro}</p>}
+            {cashbackPrevisto > 0 && <p className="cashback-aviso">Você vai ganhar <b>{moeda(cashbackPrevisto)}</b> de crédito do Clube nesta compra, liberado quando o pedido for entregue.</p>}
+            {erro && <p className="erro-msg" role="alert">{erro}{/cupom/i.test(erro) && cupomLimpo && <> <button type="button" style={{ textDecoration: "underline" }} onClick={() => { setCupom(""); apagarCupom(); setErro(""); }}>Continuar sem cupom</button></>}</p>}
             <button className="bt bt-cheio bt-largo" disabled={enviando || !pronta}>{enviando ? "Abrindo pagamento…" : "Ir para o pagamento"}</button>
             <p className="seguro"><IcCadeado /> Pix ou cartão em ambiente seguro da InfinitePay</p>
             <p className="nota">Pagamento processado pela InfinitePay em nome de {loja.responsavel} · CNPJ {loja.cnpj}.<br />Ao finalizar você concorda com a nossa <Link href="/trocas" style={{ textDecoration: "underline" }}>política de trocas</Link> e <Link href="/privacidade" style={{ textDecoration: "underline" }}>privacidade</Link>.</p>

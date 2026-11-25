@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { IcCheck, IcZap } from "@/components/Icones";
+import { apagarCupom, lerCupom } from "@/components/Clube";
 import { useSacola } from "@/components/Sacola";
 import { linkWhats, moeda } from "@/lib/formato";
 import { FUNCOES, SUPABASE_KEY } from "@/lib/config";
@@ -11,6 +12,8 @@ import { FUNCOES, SUPABASE_KEY } from "@/lib/config";
 type Dados = {
   numero: number; status: string; primeiro_nome: string; entrega_tipo: string; entrega_regiao: string | null;
   subtotal: number; frete: number; total: number; pagar_url: string | null; comprovante: string | null;
+  cupom: string | null; desconto: number; credito_usado: number;
+  cashback: { valor: number; status: string; expira_em: string | null } | null;
   itens: { nome: string; preco: number; quantidade: number }[];
 };
 
@@ -46,6 +49,7 @@ export function Pedido({ id, whatsapp }: { id: string; whatsapp: string }) {
       if (j.status === "pago" || j.status === "enviado" || j.status === "entregue") {
         limpar();
         try { localStorage.removeItem("br-ultimo-pedido"); } catch {}
+        if (j.cupom && lerCupom() === j.cupom) apagarCupom();
       } else if (j.status === "aguardando_pagamento" && tentativas.current < 6 && (q.get("transaction_nsu") || q.get("slug"))) {
         // voltou da InfinitePay: o Pix/cartão pode levar alguns segundos para confirmar
         tentativas.current += 1;
@@ -87,10 +91,21 @@ export function Pedido({ id, whatsapp }: { id: string; whatsapp: string }) {
         {d.itens.map((i, k) => (
           <div key={k} className="linha-total" style={{ padding: "6px 0" }}><span>{i.quantidade}× {i.nome}</span><span>{moeda(i.preco * i.quantidade)}</span></div>
         ))}
+        {Number(d.desconto) > 0 && <div className="linha-total desconto" style={{ padding: "6px 0" }}><span>Cupom do Clube{d.cupom ? ` (${d.cupom})` : ""}</span><span>− {moeda(d.desconto)}</span></div>}
+        {Number(d.credito_usado) > 0 && <div className="linha-total desconto" style={{ padding: "6px 0" }}><span>Crédito do Clube</span><span>− {moeda(d.credito_usado)}</span></div>}
         <div className="linha-total" style={{ padding: "6px 0", borderTop: "1px solid var(--linha)", marginTop: 6 }}><span>{ENTREGA[d.entrega_tipo] || "Entrega"}{d.entrega_regiao && d.entrega_tipo === "uber" ? ` · ${d.entrega_regiao}` : ""}</span><span>{Number(d.frete) ? moeda(d.frete) : "Grátis"}</span></div>
         <div className="linha-total" style={{ paddingTop: 8 }}><span>Total</span><b>{moeda(d.total)}</b></div>
       </section>
 
+      {d.cashback && d.status !== "cancelado" && (
+        <p className="cashback-aviso" style={{ marginTop: 14, fontSize: 13.5 }}>
+          {d.cashback.status === "previsto"
+            ? <>Ao concluir o pagamento, você ganha <b>{moeda(d.cashback.valor)}</b> de crédito do Clube Beyond Ruby.</>
+            : d.cashback.status === "disponivel"
+              ? <>Seu crédito de <b>{moeda(d.cashback.valor)}</b> do Clube já está disponível{d.cashback.expira_em ? ` até ${new Date(d.cashback.expira_em).toLocaleDateString("pt-BR")}` : ""}. Use na próxima compra com o mesmo e-mail e WhatsApp.</>
+              : <>Você ganhou <b>{moeda(d.cashback.valor)}</b> de crédito do Clube Beyond Ruby! Ele é liberado quando o pedido for entregue e vale 90 dias.</>}
+        </p>
+      )}
       <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
         {!pago && d.pagar_url && <a className="bt bt-cheio bt-largo" href={d.pagar_url}>Ir para o pagamento</a>}
         {pago && d.comprovante && <a className="bt bt-vazado bt-largo" href={d.comprovante} target="_blank" rel="noopener">Ver comprovante</a>}

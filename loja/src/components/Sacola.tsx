@@ -4,6 +4,8 @@ import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { moeda, separarNome } from "@/lib/formato";
 import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
+import type { ConfigClube } from "@/lib/tipos";
+import { LembreteClube } from "./Clube";
 import { IcFechar, IcSacola } from "./Icones";
 
 export type ItemSacola = { id: string; slug: string; nome: string; tom: string; preco: number; imagem: string | null; qtd: number };
@@ -43,7 +45,7 @@ function registrarAdicao(id: string) {
   }).catch(() => {});
 }
 
-export function SacolaProvider({ children, freteGratisMinimo }: { children: ReactNode; freteGratisMinimo: number }) {
+export function SacolaProvider({ children, freteGratisMinimo, clube }: { children: ReactNode; freteGratisMinimo: number; clube: ConfigClube }) {
   const [itens, setItens] = useState<ItemSacola[]>([]);
   const [aberta, setAberta] = useState(false);
   const [pronta, setPronta] = useState(false);
@@ -101,6 +103,7 @@ export function SacolaProvider({ children, freteGratisMinimo }: { children: Reac
           <button className="bt-ic" onClick={() => setAberta(false)} aria-label="Fechar sacola"><IcFechar /></button>
         </div>
         {itens.length > 0 && <ProgressoFrete total={total} minimo={freteGratisMinimo} />}
+        {itens.length > 0 && <LembreteClube cfg={clube} subtotal={total} />}
         <div className="gaveta-corpo">
           {itens.length === 0 ? (
             <div className="vazio">
