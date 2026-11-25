@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { slugify } from "@/lib/formato";
+import { moeda, slugify } from "@/lib/formato";
 import type { Categoria, Detalhe, StatusProduto } from "@/lib/tipos";
 import { usePainel } from "../../Acesso";
+import { NOME_STATUS_PECA } from "../../comum";
+import { IDir, IEsq, ILixo, IMais, IOlho, IUpload, IVoltar } from "../../icones";
 
 type Foto = { id?: string; url: string; alt: string; arquivo?: Blob; nova?: boolean };
 type FormPeca = {
@@ -163,76 +165,106 @@ export default function EditarPeca() {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("salvo")) setMsg({ t: "ok", m: "Peça criada! Já aparece na loja." });
   }, []);
 
-  if (!carregado) return msg ? <p className="pn-msg erro">{msg.m}</p> : <div className="carregando"><div className="giro" />Carregando…</div>;
+  if (!carregado) return msg ? <p className="pn-msg erro">{msg.m}</p> : <div className="pn-carregando"><div className="giro" />Carregando…</div>;
 
+  const precoNum = Number(f.preco.replace(/\./g, "").replace(",", "."));
   return (
     <>
+      <Link href="/painel/pecas" className="pn-voltar"><IVoltar width={16} height={16} />Peças</Link>
       <div className="pn-cab">
-        <h1>{nova ? "Nova peça" : "Editar peça"}</h1>
-        <div className="pn-acoes">
-          <Link href="/painel/pecas" className="pn-bt">← Voltar</Link>
-          {!nova && slug && <a href={`/peca/${slug}`} target="_blank" rel="noopener" className="pn-bt">Ver na loja</a>}
-        </div>
+        <div><h1>{nova ? "Nova peça" : f.nome || "Editar peça"}</h1><p>{nova ? "Cadastre fotos, preço e detalhes" : <span className={`pn-st ${f.status}`}>{NOME_STATUS_PECA[f.status]}</span>}</p></div>
+        {!nova && slug && f.status !== "oculto" && <a href={`/peca/${slug}`} target="_blank" rel="noopener" className="pn-bt"><IOlho />Ver na loja</a>}
       </div>
       {msg && <p className={`pn-msg ${msg.t}`}>{msg.m}</p>}
 
-      <div className="pn-cartao">
-        <h2>Fotos</h2>
-        <p style={{ fontSize: 12.5, color: "var(--suave)", marginBottom: 10 }}>A primeira foto é a capa. Use as setas para mudar a ordem. A legenda descreve a foto (ajuda no Google e na acessibilidade).</p>
-        <div className="pn-fotos">
-          {fotos.map((ft, i) => (
-            <div key={ft.url} className="pn-foto">
-              <img src={ft.url} alt="" />
-              <input value={ft.alt} onChange={(e) => setFotos((a) => a.map((x, k) => (k === i ? { ...x, alt: e.target.value } : x)))} placeholder="Legenda" aria-label="Legenda da foto" />
-              <div className="pn-acoes">
-                <button className="pn-bt" onClick={() => mover(i, -1)} disabled={i === 0} aria-label="Mover para a esquerda">←</button>
-                <button className="pn-bt" onClick={() => mover(i, 1)} disabled={i === fotos.length - 1} aria-label="Mover para a direita">→</button>
-                <button className="pn-bt perigo" onClick={() => tirarFoto(i)} aria-label="Remover foto">✕</button>
+      <div className="pn-editor">
+        <div className="pn-grade">
+          <section className="pn-cartao">
+            <div className="pn-cartao-cab"><div><h2>Fotos</h2><p>A primeira é a capa. Use as setas para mudar a ordem.</p></div></div>
+            <div className="pn-cartao-corpo">
+              <div className="pn-fotos">
+                {fotos.map((ft, i) => (
+                  <div key={ft.url} className="pn-foto">
+                    <div className="img"><img src={ft.url} alt="" />{i === 0 && <span className="capa">Capa</span>}</div>
+                    <input value={ft.alt} onChange={(e) => setFotos((a) => a.map((x, k) => (k === i ? { ...x, alt: e.target.value } : x)))} placeholder="Legenda da foto" aria-label="Legenda da foto" />
+                    <div className="acoes">
+                      <button onClick={() => mover(i, -1)} disabled={i === 0} aria-label="Mover para a esquerda"><IEsq /></button>
+                      <button onClick={() => mover(i, 1)} disabled={i === fotos.length - 1} aria-label="Mover para a direita"><IDir /></button>
+                      <button className="x" onClick={() => tirarFoto(i)} aria-label="Remover foto"><ILixo /></button>
+                    </div>
+                  </div>
+                ))}
+                <label className="pn-subir">
+                  <IUpload />Adicionar fotos<span style={{ fontWeight: 400, fontSize: 11.5 }}>JPG, PNG ou da câmera</span>
+                  <input ref={arquivoRef} type="file" accept="image/*" multiple hidden onChange={(e) => escolherFotos(e.target.files)} />
+                </label>
               </div>
             </div>
-          ))}
-          <label className="pn-subir">
-            + Adicionar fotos
-            <input ref={arquivoRef} type="file" accept="image/*" multiple hidden onChange={(e) => escolherFotos(e.target.files)} />
-          </label>
-        </div>
-      </div>
+          </section>
 
-      <div className="pn-cartao pn-form">
-        <h2>Informações</h2>
-        <div className="campo"><label htmlFor="nome">Nome da peça</label><input id="nome" value={f.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Ex.: Anel Solitário Maya - Prata" /></div>
-        <div className="campos duas">
-          <div className="campo"><label htmlFor="cat">Categoria</label><select id="cat" value={f.categoria} onChange={(e) => set("categoria", e.target.value)}>{cats.map((c) => <option key={c.slug} value={c.slug}>{c.nome}</option>)}</select></div>
-          <div className="campo"><label htmlFor="tom">Cor</label><select id="tom" value={f.tom} onChange={(e) => set("tom", e.target.value as FormPeca["tom"])}><option>Dourado</option><option>Prata</option></select></div>
-        </div>
-        <div className="campos duas">
-          <div className="campo"><label htmlFor="preco">Preço (R$)</label><input id="preco" inputMode="decimal" value={f.preco} onChange={(e) => set("preco", e.target.value.replace(/[^\d,.]/g, ""))} placeholder="49,90" /></div>
-          <div className="campo"><label htmlFor="st">Situação</label><select id="st" value={f.status} onChange={(e) => set("status", e.target.value as StatusProduto)}><option value="ativo">Disponível</option><option value="esgotado">Esgotado</option><option value="oculto">Oculto (fora do site)</option></select></div>
-        </div>
-        <div className="campos duas">
-          <div className="campo"><label htmlFor="est">Estoque (opcional)</label><input id="est" inputMode="numeric" value={f.estoque} onChange={(e) => set("estoque", e.target.value.replace(/\D/g, ""))} placeholder="Deixe vazio para não controlar" /><span className="dica-campo">Se preencher, baixa sozinho a cada venda e esgota no zero.</span></div>
-          <div className="campo"><label htmlFor="ord">Ordem na vitrine</label><input id="ord" inputMode="numeric" value={f.ordem} onChange={(e) => set("ordem", e.target.value.replace(/[^\d-]/g, ""))} /><span className="dica-campo">Números menores aparecem primeiro.</span></div>
-        </div>
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}><input type="checkbox" checked={f.novidade} onChange={(e) => set("novidade", e.target.checked)} style={{ accentColor: "var(--vinho)", width: 18, height: 18 }} /> Mostrar selo “Novidade”</label>
-        <div className="campo"><label htmlFor="desc">Descrição</label><textarea id="desc" rows={4} value={f.descricao} onChange={(e) => set("descricao", e.target.value)} /></div>
-        <div className="campo">
-          <label>Detalhes (material, tamanho, garantia…)</label>
-          <div className="pn-linhas-det">
-            {f.detalhes.map((d, i) => (
-              <div key={i}>
-                <input value={d.rotulo} onChange={(e) => setDet(i, "rotulo", e.target.value)} placeholder="Ex.: Material" aria-label="Nome do detalhe" />
-                <input value={d.valor} onChange={(e) => setDet(i, "valor", e.target.value)} placeholder="Ex.: Banho de ouro 18k" aria-label="Valor do detalhe" />
-                <button className="pn-bt perigo" onClick={() => set("detalhes", f.detalhes.filter((_, k) => k !== i))} aria-label="Remover detalhe">✕</button>
+          <section className="pn-cartao">
+            <div className="pn-cartao-cab"><h2>Informações</h2></div>
+            <div className="pn-cartao-corpo pn-form">
+              <div className="pn-campo"><label htmlFor="nome">Nome da peça</label><input id="nome" value={f.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Ex.: Anel Solitário Maya - Prata" /></div>
+              <div className="pn-campo"><label htmlFor="desc">Descrição</label><textarea id="desc" rows={5} value={f.descricao} onChange={(e) => set("descricao", e.target.value)} placeholder="Conte como é a peça, para quem combina, em que ocasiões usar…" /></div>
+              <div className="pn-campo">
+                <span className="rot">Detalhes</span>
+                <span className="ajuda" style={{ marginTop: -4 }}>Aparecem na página da peça (material, tamanho, garantia…).</span>
+                <div className="pn-detalhes">
+                  {f.detalhes.map((d, i) => (
+                    <div key={i}>
+                      <input value={d.rotulo} onChange={(e) => setDet(i, "rotulo", e.target.value)} placeholder="Ex.: Material" aria-label="Nome do detalhe" />
+                      <input value={d.valor} onChange={(e) => setDet(i, "valor", e.target.value)} placeholder="Ex.: Banho de ouro 18k" aria-label="Valor do detalhe" />
+                      <button className="pn-bt icone fantasma" onClick={() => set("detalhes", f.detalhes.filter((_, k) => k !== i))} aria-label="Remover detalhe"><ILixo /></button>
+                    </div>
+                  ))}
+                </div>
+                <button className="pn-bt pequeno" style={{ justifySelf: "start" }} onClick={() => set("detalhes", [...f.detalhes, { rotulo: "", valor: "" }])}><IMais />Adicionar detalhe</button>
               </div>
-            ))}
-          </div>
-          <button className="pn-bt" style={{ justifySelf: "start", marginTop: 4 }} onClick={() => set("detalhes", [...f.detalhes, { rotulo: "", valor: "" }])}>+ Detalhe</button>
+            </div>
+          </section>
         </div>
+
+        <aside className="pn-grade">
+          <section className="pn-cartao">
+            <div className="pn-cartao-cab"><h2>Situação</h2></div>
+            <div className="pn-cartao-corpo pn-form">
+              <div className="pn-campo">
+                <select id="st" aria-label="Situação" value={f.status} onChange={(e) => set("status", e.target.value as StatusProduto)}>
+                  <option value="ativo">Disponível</option><option value="esgotado">Esgotado</option><option value="oculto">Oculto (fora do site)</option>
+                </select>
+                <span className="ajuda">{f.status === "ativo" ? "Aparece no site e pode ser comprada." : f.status === "esgotado" ? "Aparece com o selo Esgotado e o botão Avise-me." : "Não aparece no site, mas fica guardada aqui."}</span>
+              </div>
+              <label className="pn-chave" style={{ color: "var(--pn-txt)" }}><input type="checkbox" checked={f.novidade} onChange={(e) => set("novidade", e.target.checked)} /><span />Selo “Novidade”</label>
+            </div>
+          </section>
+
+          <section className="pn-cartao">
+            <div className="pn-cartao-cab"><h2>Preço e estoque</h2></div>
+            <div className="pn-cartao-corpo pn-form">
+              <div className="pn-campo"><label htmlFor="preco">Preço</label><div className="pn-prefixo"><span>R$</span><input id="preco" inputMode="decimal" value={f.preco} onChange={(e) => set("preco", e.target.value.replace(/[^\d,.]/g, ""))} placeholder="49,90" /></div>
+                {precoNum > 0 && <span className="ajuda">Na loja: {moeda(precoNum)}</span>}</div>
+              <div className="pn-campo"><label htmlFor="est">Estoque <span className="ajuda">(opcional)</span></label><input id="est" inputMode="numeric" value={f.estoque} onChange={(e) => set("estoque", e.target.value.replace(/\D/g, ""))} placeholder="Não controlar" />
+                <span className="ajuda">Se preencher, baixa sozinho a cada venda e esgota no zero.</span></div>
+            </div>
+          </section>
+
+          <section className="pn-cartao">
+            <div className="pn-cartao-cab"><h2>Organização</h2></div>
+            <div className="pn-cartao-corpo pn-form">
+              <div className="pn-campo"><label htmlFor="cat">Categoria</label><select id="cat" value={f.categoria} onChange={(e) => set("categoria", e.target.value)}>{cats.map((c) => <option key={c.slug} value={c.slug}>{c.nome}</option>)}</select></div>
+              <div className="pn-campo"><label htmlFor="tom">Cor</label><select id="tom" value={f.tom} onChange={(e) => set("tom", e.target.value as FormPeca["tom"])}><option>Dourado</option><option>Prata</option></select></div>
+              <div className="pn-campo"><label htmlFor="ord">Ordem na vitrine</label><input id="ord" inputMode="numeric" value={f.ordem} onChange={(e) => set("ordem", e.target.value.replace(/[^\d-]/g, ""))} /><span className="ajuda">Números menores aparecem primeiro.</span></div>
+            </div>
+          </section>
+        </aside>
       </div>
 
       <div className="pn-salvar">
-        {!nova && <button className="pn-bt perigo" onClick={excluir} disabled={salvando} style={{ marginRight: "auto" }}>Excluir peça</button>}
-        <button className="pn-bt cheio" onClick={salvar} disabled={salvando} style={{ minWidth: 140 }}>{salvando ? "Salvando…" : "Salvar"}</button>
+        {!nova ? <button className="pn-bt perigo" onClick={excluir} disabled={salvando}><ILixo />Excluir</button> : <span />}
+        <span className="aviso">{salvando ? "Salvando…" : ""}</span>
+        <Link href="/painel/pecas" className="pn-bt">Cancelar</Link>
+        <button className="pn-bt primario" onClick={salvar} disabled={salvando} style={{ minWidth: 120 }}>{salvando ? "Salvando…" : "Salvar"}</button>
       </div>
     </>
   );

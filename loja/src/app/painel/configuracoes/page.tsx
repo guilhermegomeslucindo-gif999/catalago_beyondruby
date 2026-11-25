@@ -4,17 +4,28 @@ import { useEffect, useState } from "react";
 import type { ConfigFrete, ConfigHome, ConfigLoja, RegiaoUber } from "@/lib/tipos";
 import { slugify } from "@/lib/formato";
 import { usePainel } from "../Acesso";
+import { ILixo, IMais, IUpload } from "../icones";
 
 const num = (v: string) => Number(String(v).replace(",", ".")) || 0;
 const ZONAS = [["MG", "Minas Gerais"], ["SUDESTE_SUL", "Sudeste e Sul"], ["OUTRAS", "Demais regiões"]] as const;
+
+function Secao({ titulo, texto, children }: { titulo: string; texto: string; children: React.ReactNode }) {
+  return (
+    <section className="pn-secao">
+      <div><h2>{titulo}</h2><p>{texto}</p></div>
+      <div className="pn-cartao pn-cartao-corpo pn-form">{children}</div>
+    </section>
+  );
+}
 
 export default function Configuracoes() {
   const { db, atualizarSite } = usePainel();
   const [loja, setLoja] = useState<ConfigLoja | null>(null);
   const [frete, setFrete] = useState<ConfigFrete | null>(null);
   const [home, setHome] = useState<ConfigHome | null>(null);
-  const [msg, setMsg] = useState<{ t: "ok" | "erro"; m: string } | null>(null);
+  const [msg, setMsg] = useState<{ t: "ok" | "erro" | "info"; m: string } | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [mudou, setMudou] = useState(false);
 
   useEffect(() => {
     db.from("configuracoes").select("chave,valor").then(({ data }) => {
@@ -23,15 +34,17 @@ export default function Configuracoes() {
     });
   }, [db]);
 
-  if (!loja || !frete || !home) return <div className="carregando"><div className="giro" />Carregando…</div>;
+  if (!loja || !frete || !home) return <div className="pn-carregando"><div className="giro" />Carregando…</div>;
 
-  const setL = <K extends keyof ConfigLoja>(k: K, v: ConfigLoja[K]) => setLoja({ ...loja, [k]: v });
-  const setRegiao = (i: number, r: Partial<RegiaoUber>) => setFrete({ ...frete, uber: { ...frete.uber, regioes: frete.uber.regioes.map((x, k) => (k === i ? { ...x, ...r } : x)) } });
+  const setL = <K extends keyof ConfigLoja>(k: K, v: ConfigLoja[K]) => { setLoja({ ...loja, [k]: v }); setMudou(true); };
+  const setF = (f: ConfigFrete) => { setFrete(f); setMudou(true); };
+  const setH = (h: ConfigHome) => { setHome(h); setMudou(true); };
+  const setRegiao = (i: number, r: Partial<RegiaoUber>) => setF({ ...frete, uber: { ...frete.uber, regioes: frete.uber.regioes.map((x, k) => (k === i ? { ...x, ...r } : x)) } });
 
   async function salvar() {
     setMsg(null);
     const zap = loja!.whatsapp.replace(/\D/g, "");
-    if (zap.length < 12) return setMsg({ t: "erro", m: "WhatsApp deve ter DDI + DDD + número (ex.: 5531999999999)." });
+    if (zap.length < 12) return setMsg({ t: "erro", m: "WhatsApp deve ter 55 + DDD + número (ex.: 5531999999999)." });
     setSalvando(true);
     const regioes = frete!.uber.regioes.filter((r) => r.nome.trim()).map((r) => ({ ...r, id: r.id || slugify(r.nome).slice(0, 30), valor: num(String(r.valor)) }));
     const linhas = [
@@ -44,112 +57,118 @@ export default function Configuracoes() {
     setSalvando(false);
     if (error) return setMsg({ t: "erro", m: "Não foi possível salvar." });
     await atualizarSite();
-    setMsg({ t: "ok", m: "Configurações salvas! A loja já foi atualizada." });
+    setMudou(false);
+    setMsg({ t: "ok", m: "Configurações salvas. A loja já foi atualizada." });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function trocarFotoHero(arq: File | undefined) {
     if (!arq) return;
-    setMsg({ t: "ok", m: "Enviando foto…" });
+    setMsg({ t: "info", m: "Enviando foto…" });
     const caminho = `site/capa-${Date.now()}.${arq.type === "image/png" ? "png" : arq.type === "image/webp" ? "webp" : "jpg"}`;
     const { error } = await db.storage.from("produtos").upload(caminho, arq, { contentType: arq.type, cacheControl: "31536000" });
     if (error) return setMsg({ t: "erro", m: "Não foi possível enviar a foto." });
-    setHome({ ...home!, hero: db.storage.from("produtos").getPublicUrl(caminho).data.publicUrl });
-    setMsg({ t: "ok", m: "Foto enviada. Clique em Salvar para publicar." });
+    setH({ ...home!, hero: db.storage.from("produtos").getPublicUrl(caminho).data.publicUrl });
+    setMsg({ t: "info", m: "Foto enviada. Clique em Salvar para publicar." });
   }
 
-  const inp = { minHeight: 40, border: "1px solid var(--linha-2)", padding: "0 10px", width: "100%", fontSize: 14 } as const;
+  const ativo = (rot: string, v: boolean, on: (b: boolean) => void) => (
+    <label className="pn-chave" style={{ color: "var(--pn-txt)", fontWeight: 600, fontSize: 13.5 }}><input type="checkbox" checked={v} onChange={(e) => on(e.target.checked)} /><span />{rot}</label>
+  );
 
   return (
     <>
-      <div className="pn-cab"><h1>Configurações</h1></div>
+      <div className="pn-cab"><div><h1>Configurações</h1><p>Contato, frete, avisos e página inicial da loja</p></div></div>
       {msg && <p className={`pn-msg ${msg.t}`}>{msg.m}</p>}
 
-      <div className="pn-cartao pn-form">
-        <h2>Faixa de avisos (topo do site)</h2>
+      <Secao titulo="Faixa de avisos" texto="Mensagens que passam no topo do site, uma de cada vez.">
         {loja.avisos.map((a, i) => (
-          <div key={i} style={{ display: "flex", gap: 6 }}>
-            <input style={inp} value={a} onChange={(e) => setL("avisos", loja.avisos.map((x, k) => (k === i ? e.target.value : x)))} />
-            <button className="pn-bt perigo" onClick={() => setL("avisos", loja.avisos.filter((_, k) => k !== i))} aria-label="Remover aviso">✕</button>
+          <div key={i} style={{ display: "flex", gap: 8 }} className="pn-campo">
+            <input value={a} onChange={(e) => setL("avisos", loja.avisos.map((x, k) => (k === i ? e.target.value : x)))} aria-label={`Aviso ${i + 1}`} />
+            <button className="pn-bt icone fantasma" onClick={() => setL("avisos", loja.avisos.filter((_, k) => k !== i))} aria-label="Remover aviso"><ILixo /></button>
           </div>
         ))}
-        <button className="pn-bt" style={{ justifySelf: "start" }} onClick={() => setL("avisos", [...loja.avisos, ""])}>+ Aviso</button>
-      </div>
+        <button className="pn-bt pequeno" style={{ justifySelf: "start" }} onClick={() => setL("avisos", [...loja.avisos, ""])}><IMais />Adicionar aviso</button>
+      </Secao>
 
-      <div className="pn-cartao pn-form">
-        <h2>Contato</h2>
-        <div className="campos duas">
-          <div className="campo"><label>WhatsApp (com 55 e DDD)</label><input value={loja.whatsapp} onChange={(e) => setL("whatsapp", e.target.value)} inputMode="tel" /></div>
-          <div className="campo"><label>Instagram (sem @)</label><input value={loja.instagram} onChange={(e) => setL("instagram", e.target.value)} placeholder="beyondruby" /></div>
+      <Secao titulo="Contato" texto="Usados nos botões de WhatsApp, no menu e no rodapé.">
+        <div className="pn-2col">
+          <div className="pn-campo"><label htmlFor="zap">WhatsApp</label><input id="zap" value={loja.whatsapp} onChange={(e) => setL("whatsapp", e.target.value)} inputMode="tel" /><span className="ajuda">Com 55 e DDD, só números.</span></div>
+          <div className="pn-campo"><label htmlFor="ig">Instagram</label><div className="pn-prefixo"><span>@</span><input id="ig" value={loja.instagram} onChange={(e) => setL("instagram", e.target.value)} /></div></div>
         </div>
-        <div className="campo"><label>E-mail de contato</label><input type="email" value={loja.email} onChange={(e) => setL("email", e.target.value)} /></div>
-      </div>
+        <div className="pn-campo"><label htmlFor="em">E-mail</label><input id="em" type="email" value={loja.email} onChange={(e) => setL("email", e.target.value)} /></div>
+      </Secao>
 
-      <div className="pn-cartao pn-form">
-        <h2>Frete</h2>
-        <div className="campo" style={{ maxWidth: 260 }}><label>Frete grátis no PAC a partir de (R$)</label><input inputMode="decimal" value={String(frete.frete_gratis_minimo)} onChange={(e) => setFrete({ ...frete, frete_gratis_minimo: e.target.value as unknown as number })} /></div>
+      <Secao titulo="Frete grátis" texto="Pedidos a partir deste valor ganham o PAC grátis.">
+        <div className="pn-campo" style={{ maxWidth: 240 }}><label htmlFor="fg">Valor mínimo</label><div className="pn-prefixo"><span>R$</span><input id="fg" inputMode="decimal" value={String(frete.frete_gratis_minimo)} onChange={(e) => setF({ ...frete, frete_gratis_minimo: e.target.value as unknown as number })} /></div></div>
+      </Secao>
 
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 600, marginTop: 6 }}><input type="checkbox" checked={frete.retirada.ativo} onChange={(e) => setFrete({ ...frete, retirada: { ...frete.retirada, ativo: e.target.checked } })} /> Retirada</label>
-        <div className="campos duas">
-          <div className="campo"><label>Local (aparece no site)</label><input value={frete.retirada.local} onChange={(e) => setFrete({ ...frete, retirada: { ...frete.retirada, local: e.target.value } })} /></div>
-          <div className="campo"><label>Texto</label><input value={frete.retirada.texto || ""} onChange={(e) => setFrete({ ...frete, retirada: { ...frete.retirada, texto: e.target.value } })} /></div>
+      <Secao titulo="Retirada" texto="A cliente busca a peça. O endereço exato vocês combinam pelo WhatsApp.">
+        {ativo("Oferecer retirada", frete.retirada.ativo, (v) => setF({ ...frete, retirada: { ...frete.retirada, ativo: v } }))}
+        <div className="pn-2col">
+          <div className="pn-campo"><label htmlFor="rl">Local mostrado no site</label><input id="rl" value={frete.retirada.local} onChange={(e) => setF({ ...frete, retirada: { ...frete.retirada, local: e.target.value } })} /></div>
+          <div className="pn-campo"><label htmlFor="rt">Texto</label><input id="rt" value={frete.retirada.texto || ""} onChange={(e) => setF({ ...frete, retirada: { ...frete.retirada, texto: e.target.value } })} /></div>
         </div>
+      </Secao>
 
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 600, marginTop: 6 }}><input type="checkbox" checked={frete.uber.ativo} onChange={(e) => setFrete({ ...frete, uber: { ...frete.uber, ativo: e.target.checked } })} /> Entrega via Uber</label>
-        <div className="pn-tabela-frete" style={{ gridTemplateColumns: "1fr 100px 44px" }}>
-          <b>Região</b><b>Valor (R$)</b><span />
+      <Secao titulo="Entrega via Uber" texto="Taxa fixa por região da Grande BH. A cliente escolhe a região na finalização.">
+        {ativo("Oferecer entrega via Uber", frete.uber.ativo, (v) => setF({ ...frete, uber: { ...frete.uber, ativo: v } }))}
+        <div className="pn-tabela-ed">
+          <div className="linha cab" style={{ gridTemplateColumns: "1fr 110px 34px" }}><span>Região</span><span>Valor</span><span /></div>
           {frete.uber.regioes.map((r, i) => (
-            <div key={i} style={{ display: "contents" }}>
-              <input value={r.nome} onChange={(e) => setRegiao(i, { nome: e.target.value })} />
-              <input inputMode="decimal" value={String(r.valor)} onChange={(e) => setRegiao(i, { valor: e.target.value as unknown as number })} />
-              <button className="pn-bt perigo" onClick={() => setFrete({ ...frete, uber: { ...frete.uber, regioes: frete.uber.regioes.filter((_, k) => k !== i) } })} aria-label="Remover região">✕</button>
+            <div key={i} className="linha" style={{ gridTemplateColumns: "1fr 110px 34px" }}>
+              <input value={r.nome} onChange={(e) => setRegiao(i, { nome: e.target.value })} aria-label="Região" />
+              <input inputMode="decimal" value={String(r.valor)} onChange={(e) => setRegiao(i, { valor: e.target.value as unknown as number })} aria-label="Valor" />
+              <button className="pn-bt icone fantasma" onClick={() => setF({ ...frete, uber: { ...frete.uber, regioes: frete.uber.regioes.filter((_, k) => k !== i) } })} aria-label="Remover região"><ILixo /></button>
             </div>
           ))}
         </div>
-        <button className="pn-bt" style={{ justifySelf: "start" }} onClick={() => setFrete({ ...frete, uber: { ...frete.uber, regioes: [...frete.uber.regioes, { id: "", nome: "", valor: 0 }] } })}>+ Região</button>
+        <button className="pn-bt pequeno" style={{ justifySelf: "start" }} onClick={() => setF({ ...frete, uber: { ...frete.uber, regioes: [...frete.uber.regioes, { id: "", nome: "", valor: 0 }] } })}><IMais />Adicionar região</button>
+      </Secao>
 
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 600, marginTop: 6 }}><input type="checkbox" checked={frete.correios.ativo} onChange={(e) => setFrete({ ...frete, correios: { ...frete.correios, ativo: e.target.checked } })} /> Correios</label>
-        <div className="pn-tabela-frete">
-          <b>Região</b><b>PAC (R$)</b><b>SEDEX (R$)</b>
+      <Secao titulo="Correios" texto="Valores fixos por região do CEP de entrega, para PAC e SEDEX.">
+        {ativo("Oferecer envio pelos Correios", frete.correios.ativo, (v) => setF({ ...frete, correios: { ...frete.correios, ativo: v } }))}
+        <div className="pn-tabela-ed">
+          <div className="linha cab" style={{ gridTemplateColumns: "1fr 100px 100px" }}><span>Região</span><span>PAC</span><span>SEDEX</span></div>
           {ZONAS.map(([z, nome]) => (
-            <div key={z} style={{ display: "contents" }}>
+            <div key={z} className="linha" style={{ gridTemplateColumns: "1fr 100px 100px" }}>
               <span>{nome}</span>
               {(["pac", "sedex"] as const).map((t) => (
-                <input key={t} inputMode="decimal" value={String(frete.correios.tabela[z][t])}
-                  onChange={(e) => setFrete({ ...frete, correios: { ...frete.correios, tabela: { ...frete.correios.tabela, [z]: { ...frete.correios.tabela[z], [t]: e.target.value as unknown as number } } } })} />
+                <input key={t} inputMode="decimal" aria-label={`${t.toUpperCase()} ${nome}`} value={String(frete.correios.tabela[z][t])}
+                  onChange={(e) => setF({ ...frete, correios: { ...frete.correios, tabela: { ...frete.correios.tabela, [z]: { ...frete.correios.tabela[z], [t]: e.target.value as unknown as number } } } })} />
               ))}
             </div>
           ))}
         </div>
-        <div className="campos duas">
-          <div className="campo"><label>Prazo PAC</label><input value={frete.correios.prazos?.pac || ""} onChange={(e) => setFrete({ ...frete, correios: { ...frete.correios, prazos: { ...frete.correios.prazos, pac: e.target.value } } })} /></div>
-          <div className="campo"><label>Prazo SEDEX</label><input value={frete.correios.prazos?.sedex || ""} onChange={(e) => setFrete({ ...frete, correios: { ...frete.correios, prazos: { ...frete.correios.prazos, sedex: e.target.value } } })} /></div>
+        <div className="pn-2col">
+          <div className="pn-campo"><label htmlFor="pp">Prazo PAC</label><input id="pp" value={frete.correios.prazos?.pac || ""} onChange={(e) => setF({ ...frete, correios: { ...frete.correios, prazos: { ...frete.correios.prazos, pac: e.target.value } } })} /></div>
+          <div className="pn-campo"><label htmlFor="ps">Prazo SEDEX</label><input id="ps" value={frete.correios.prazos?.sedex || ""} onChange={(e) => setF({ ...frete, correios: { ...frete.correios, prazos: { ...frete.correios.prazos, sedex: e.target.value } } })} /></div>
         </div>
-      </div>
+      </Secao>
 
-      <div className="pn-cartao pn-form">
-        <h2>Página inicial</h2>
-        <div className="campo"><label>Título da abertura</label><input value={home.titulo} onChange={(e) => setHome({ ...home, titulo: e.target.value })} /></div>
-        <div className="campo"><label>Frase da abertura</label><input value={home.subtitulo} onChange={(e) => setHome({ ...home, subtitulo: e.target.value })} /></div>
-        <div className="campo">
-          <label>Foto da abertura</label>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-            <img src={home.hero} alt="" style={{ width: 80, height: 100, objectFit: "cover" }} />
-            <label className="pn-bt" style={{ cursor: "pointer" }}>Trocar foto<input type="file" accept="image/*" hidden onChange={(e) => trocarFotoHero(e.target.files?.[0])} /></label>
+      <Secao titulo="Página inicial" texto="Foto, título e frase da abertura do site.">
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <img src={home.hero} alt="" style={{ width: 84, height: 105, objectFit: "cover", borderRadius: 8, border: "1px solid var(--pn-borda)" }} />
+          <div style={{ display: "grid", gap: 6 }}>
+            <label className="pn-bt pequeno" style={{ cursor: "pointer", justifySelf: "start" }}><IUpload />Trocar foto<input type="file" accept="image/*" hidden onChange={(e) => trocarFotoHero(e.target.files?.[0])} /></label>
+            <span className="ajuda" style={{ fontSize: 12, color: "var(--pn-suave)" }}>Foto vertical, com pelo menos 1200px de largura.</span>
           </div>
-          <span className="dica-campo">Use uma foto vertical de boa qualidade (de preferência com pelo menos 1200px de largura).</span>
         </div>
-      </div>
+        <div className="pn-campo"><label htmlFor="ht">Título</label><input id="ht" value={home.titulo} onChange={(e) => setH({ ...home, titulo: e.target.value })} /></div>
+        <div className="pn-campo"><label htmlFor="hs">Frase</label><input id="hs" value={home.subtitulo} onChange={(e) => setH({ ...home, subtitulo: e.target.value })} /></div>
+      </Secao>
 
-      <TrocarMinhaSenha />
+      <MinhaSenha />
 
       <div className="pn-salvar">
-        <button className="pn-bt cheio" onClick={salvar} disabled={salvando} style={{ minWidth: 160 }}>{salvando ? "Salvando…" : "Salvar configurações"}</button>
+        <span className="aviso">{mudou ? "Há alterações não salvas" : "Tudo salvo"}</span>
+        <button className="pn-bt primario" onClick={salvar} disabled={salvando} style={{ minWidth: 150 }}>{salvando ? "Salvando…" : "Salvar alterações"}</button>
       </div>
     </>
   );
 }
 
-function TrocarMinhaSenha() {
+function MinhaSenha() {
   const { db } = usePainel();
   const [s, setS] = useState("");
   const [m, setM] = useState<{ t: "ok" | "erro"; m: string } | null>(null);
@@ -161,13 +180,12 @@ function TrocarMinhaSenha() {
     setS(""); setM({ t: "ok", m: "Senha trocada." });
   };
   return (
-    <div className="pn-cartao pn-form">
-      <h2>Minha senha</h2>
-      {m && <p className={`pn-msg ${m.t}`}>{m.m}</p>}
-      <div style={{ display: "flex", gap: 6, maxWidth: 420 }}>
-        <input type="password" autoComplete="new-password" placeholder="Nova senha" value={s} onChange={(e) => setS(e.target.value)} style={{ flex: 1, minHeight: 40, border: "1px solid var(--linha-2)", padding: "0 10px" }} />
-        <button className="pn-bt" onClick={salvar}>Trocar</button>
+    <Secao titulo="Minha senha" texto="Troque a senha do seu acesso ao painel.">
+      {m && <p className={`pn-msg ${m.t}`} style={{ margin: 0 }}>{m.m}</p>}
+      <div style={{ display: "flex", gap: 8, maxWidth: 440 }} className="pn-campo">
+        <input type="password" autoComplete="new-password" placeholder="Nova senha" value={s} onChange={(e) => setS(e.target.value)} aria-label="Nova senha" />
+        <button className="pn-bt" onClick={salvar}>Trocar senha</button>
       </div>
-    </div>
+    </Secao>
   );
 }
