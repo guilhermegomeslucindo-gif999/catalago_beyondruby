@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { Vitrine } from "@/components/Vitrine";
 import { getCategorias, getConfigs, getProdutos } from "@/lib/dados";
 
@@ -22,15 +22,9 @@ export default async function Categoria({ params }: { params: Promise<{ slug: st
   const c = categorias.find((x) => x.slug === slug);
   if (!c) notFound();
   return (
-    <>
-      <div className="cont">
-        <nav className="migalha" aria-label="Você está em"><Link href="/">Início</Link> / <Link href="/loja">Loja</Link> / {c.nome}</nav>
-      </div>
-      <div className="cont cab-pagina" style={{ paddingTop: 12 }}>
-        <h1>{c.nome}</h1>
-        {c.subtitulo && <p>{c.subtitulo}</p>}
-      </div>
-      <Vitrine produtos={produtos.filter((p) => p.categoria === slug)} whatsapp={loja.whatsapp} categorias={categorias} categoriaAtual={slug} />
-    </>
+    <Suspense>
+      <Vitrine produtos={produtos.filter((p) => p.categoria === slug)} whatsapp={loja.whatsapp} categorias={categorias}
+        categoriaAtual={slug} titulo={c.nome} subtitulo={c.subtitulo} />
+    </Suspense>
   );
 }
