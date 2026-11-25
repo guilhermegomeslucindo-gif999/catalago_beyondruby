@@ -96,16 +96,47 @@ Deno.serve(async (req) => {
       return json({ erro: "Escolha a forma de entrega." }, 400);
     }
 
-    const total = Math.round((subtotal + frete) * 100) / 100;
+    // ---------- cupom do Clube Beyond Ruby ----------
+    let desconto = 0;
+    let cupom: string | null = null;
+    const codigo = so(b.cupom).toUpperCase().replace(/\s+/g, "");
+    if (codigo) {
+      const { data: cc } = await db.from("configuracoes").select("valor").eq("chave", "clube").single();
+      const clube = cc?.valor ?? {};
+      const minimo = Number(clube.minimo ?? 99);
+      const { data: lead } = await db.from("clube").select("id,email,whatsapp,cupom_usado_em").eq("codigo", codigo).maybeSingle();
+      if (!clube.ativo || !lead) return json({ erro: "Cupom inválido. Confira o código ou remova o cupom." }, 409);
+      if (lead.cupom_usado_em) return json({ erro: "Este cupom já foi utilizado." }, 409);
+      if (subtotal < minimo) return json({ erro: `O cupom vale para compras a partir de R$ ${minimo.toFixed(2).replace(".", ",")} em peças.` }, 409);
+      const pagos = ["pago", "enviado", "entregue"];
+      const zap = whats.length > 11 && whats.startsWith("55") ? whats.slice(2) : whats;
+      const [{ count: porEmail }, { count: porZap }] = await Promise.all([
+        db.from("pedidos").select("id", { count: "exact", head: true }).in("status", pagos).eq("cliente_email", email),
+        db.from("pedidos").select("id", { count: "exact", head: true }).in("status", pagos).eq("cliente_whatsapp", zap),
+      ]);
+      if (porEmail || porZap) return json({ erro: "O cupom de boas-vindas vale só para a primeira compra." }, 409);
+      desconto = Math.min(Number(clube.valor ?? 10), subtotal);
+      cupom = codigo;
+    }
+
+    const total = Math.round((subtotal - desconto + frete) * 100) / 100;
 
     // ---------- grava o pedido ----------
     const { data: pedido, error: e1 } = await db.from("pedidos").insert({
       cliente_nome: nome, cliente_email: email, cliente_whatsapp: whats,
       entrega_tipo: tipo, entrega_regiao: regiao, endereco,
-      subtotal: Math.round(subtotal * 100) / 100, frete, total,
+      subtotal: Math.round(subtotal * 100) / 100, frete, total, cupom, desconto,
       observacao: so(b.observacao).slice(0, 500) || null,
     }).select("id,numero,token").single();
     if (e1) throw e1;
+
+    // quem marcou "quero receber novidades" entra no Clube (sem cupom novo)
+    if (b.cliente?.aceita_novidades === true) {
+      await db.from("clube").upsert(
+        { nome: nome.split(" ")[0].slice(0, 60), email, whatsapp: whats.replace(/^55(?=\d{10,11}$)/, ""), origem: "compra", aceita_novidades: true },
+        { onConflict: "email", ignoreDuplicates: true },
+      );
+    }
 
     const { error: e2 } = await db.from("pedido_itens").insert(produtos.map((p) => ({
       pedido_id: pedido.id, produto_id: p.id, nome: p.nome, preco: p.preco, quantidade: qtd.get(p.id)!,
@@ -118,9 +149,13 @@ Deno.serve(async (req) => {
     if (!origem) return json({ erro: "Endereço do site inválido." }, 400);
 
     const nomeEntrega: Record<string, string> = { uber: "Entrega via Uber", pac: "Correios PAC", sedex: "Correios SEDEX" };
-    const ipItens = produtos.map((p) => ({
-      quantity: qtd.get(p.id)!, price: Math.round(Number(p.preco) * 100), description: p.nome.slice(0, 100),
-    }));
+    // com desconto, as peças vão numa linha só (a InfinitePay não aceita item com valor negativo)
+    const ipItens = desconto > 0
+      ? [{ quantity: 1, price: Math.round((subtotal - desconto) * 100),
+           description: `Pedido #${pedido.numero} – ${[...qtd.values()].reduce((a, n) => a + n, 0)} peça(s) com cupom ${cupom}`.slice(0, 100) }]
+      : produtos.map((p) => ({
+          quantity: qtd.get(p.id)!, price: Math.round(Number(p.preco) * 100), description: p.nome.slice(0, 100),
+        }));
     if (frete > 0) ipItens.push({ quantity: 1, price: Math.round(frete * 100), description: `Frete – ${nomeEntrega[tipo]}` });
 
     const handle = await handleInfinitePay(db);
