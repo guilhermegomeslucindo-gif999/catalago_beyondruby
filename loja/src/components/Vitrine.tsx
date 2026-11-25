@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { Produto } from "@/lib/tipos";
 import { CardPeca } from "./CardPeca";
@@ -9,7 +8,6 @@ import { IcFechar } from "./Icones";
 
 type Ordem = "destaque" | "menor" | "maior" | "novidades";
 type Faixa = "" | "ate50" | "50a70" | "acima70";
-type Estilo = "a" | "b" | "c";
 const sem = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const ORDENS: [Ordem, string][] = [["destaque", "Destaques"], ["menor", "Menor preço"], ["maior", "Maior preço"], ["novidades", "Novidades"]];
 const FAIXAS: [Faixa, string][] = [["ate50", "Até R$ 50"], ["50a70", "R$ 50 a R$ 70"], ["acima70", "Acima de R$ 70"]];
@@ -22,8 +20,6 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
   produtos: Produto[]; whatsapp: string; categorias?: { slug: string; nome: string }[];
   categoriaAtual?: string; busca?: string; ordemInicial?: Ordem; titulo: string; subtitulo?: string | null;
 }) {
-  const sp = useSearchParams();
-  const estilo = (["a", "b", "c"].includes(sp.get("estilo") || "") ? sp.get("estilo") : "b") as Estilo;
   const [tom, setTom] = useState<"" | "Dourado" | "Prata">("");
   const [soDisp, setSoDisp] = useState(false);
   const [faixa, setFaixa] = useState<Faixa>("");
@@ -94,13 +90,13 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
     </div>
   );
   const grade = lista.length ? (
-    <div className={`grade${estilo === "c" ? " grade-lateral" : ""}`}>{lista.map((p, i) => <CardPeca key={p.id} p={p} whatsapp={whatsapp} prioridade={i < 4} />)}</div>
+    <div className="grade">{lista.map((p, i) => <CardPeca key={p.id} p={p} whatsapp={whatsapp} prioridade={i < 4} />)}</div>
   ) : (
     <div className="vazio"><b>Nenhuma peça encontrada</b><p>Tente outro filtro ou veja todas as peças.</p>
       {nAtivos ? <button className="bt bt-vazado" style={{ marginTop: 18 }} onClick={limpar}>Limpar filtros</button> : <Link href="/loja" className="bt bt-vazado" style={{ marginTop: 18 }}>Ver todas as peças</Link>}</div>
   );
   const cabecalho = (
-    <header className={`vt-cab vt-cab-${estilo}`}>
+    <header className="vt-cab">
       <nav className="vt-migalha" aria-label="Você está em"><Link href="/">Início</Link><span>/</span>{categoriaAtual || busca ? <><Link href="/loja">Loja</Link><span>/</span>{titulo}</> : "Loja"}</nav>
       <h1>{titulo}</h1>
       {subtitulo && <p>{subtitulo}</p>}
@@ -126,60 +122,6 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
     </>
   );
 
-  // ---------- A: editorial (tudo em texto) ----------
-  if (estilo === "a") return (
-    <div className="cont vt">
-      {cabecalho}
-      {abas}
-      <div className="vt-barra">
-        <span className="vt-qtd" aria-live="polite">{qtd}</span>
-        <div className="vt-barra-dir">
-          <label className="vt-ordenar"><span>Cor</span>
-            <select value={tom} onChange={(e) => setTom(e.target.value as typeof tom)}><option value="">Todas</option><option>Dourado</option><option>Prata</option></select><IcSeta /></label>
-          <label className="vt-ordenar"><span>Preço</span>
-            <select value={faixa} onChange={(e) => setFaixa(e.target.value as Faixa)}><option value="">Todos</option>{FAIXAS.map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select><IcSeta /></label>
-          <label className="vt-check"><input type="checkbox" checked={soDisp} onChange={() => setSoDisp(!soDisp)} />Só disponíveis</label>
-          {ordenar}
-        </div>
-      </div>
-      {grade}
-    </div>
-  );
-
-  // ---------- C: filtros na lateral (computador) ----------
-  if (estilo === "c") return (
-    <div className="cont vt">
-      {cabecalho}
-      <div className="vt-lateral-layout">
-        <aside className="vt-lateral">
-          {categorias && (
-            <fieldset className="vt-grupo">
-              <legend>Categoria</legend>
-              <Link href="/loja" className="vt-cat" aria-current={!categoriaAtual ? "page" : undefined}>Todas as peças</Link>
-              {categorias.map((c) => <Link key={c.slug} href={`/categoria/${c.slug}`} className="vt-cat" aria-current={categoriaAtual === c.slug ? "page" : undefined}>{c.nome}</Link>)}
-            </fieldset>
-          )}
-          {grupos}
-          {nAtivos > 0 && <button className="vt-limpar" onClick={limpar}>Limpar filtros</button>}
-        </aside>
-        <div>
-          <div className="vt-barra">
-            <span className="vt-qtd" aria-live="polite">{qtd}</span>
-            <div className="vt-barra-dir">
-              <button className="vt-filtrar so-cel-vt" onClick={() => setPainel(true)}><IcFiltro />Filtrar{nAtivos ? ` (${nAtivos})` : ""}</button>
-              {ordenar}
-            </div>
-          </div>
-          <div className="so-cel-vt">{abas}</div>
-          {ativosChips}
-          {grade}
-        </div>
-      </div>
-      {painelFiltros}
-    </div>
-  );
-
-  // ---------- B: botão Filtrar + painel ----------
   return (
     <div className="cont vt">
       {cabecalho}
