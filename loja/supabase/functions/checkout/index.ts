@@ -119,13 +119,23 @@ Deno.serve(async (req) => {
       cupom = codigo;
     }
 
-    const total = Math.round((subtotal - desconto + frete) * 100) / 100;
+    // ---------- crédito (cashback) do Clube ----------
+    let creditoUsado = 0;
+    if (b.usar_credito === true) {
+      const { data: sc } = await db.rpc("saldo_credito", { p_email: email, p_whatsapp: whats });
+      const saldo = Number(sc?.saldo ?? 0);
+      // deixa pelo menos R$ 1 em peças para o pagamento existir
+      creditoUsado = Math.max(0, Math.min(saldo, subtotal - desconto - 1));
+      creditoUsado = Math.floor(creditoUsado * 100) / 100;
+    }
+
+    const total = Math.round((subtotal - desconto - creditoUsado + frete) * 100) / 100;
 
     // ---------- grava o pedido ----------
     const { data: pedido, error: e1 } = await db.from("pedidos").insert({
       cliente_nome: nome, cliente_email: email, cliente_whatsapp: whats,
       entrega_tipo: tipo, entrega_regiao: regiao, endereco,
-      subtotal: Math.round(subtotal * 100) / 100, frete, total, cupom, desconto,
+      subtotal: Math.round(subtotal * 100) / 100, frete, total, cupom, desconto, credito_usado: creditoUsado,
       observacao: so(b.observacao).slice(0, 500) || null,
     }).select("id,numero,token").single();
     if (e1) throw e1;
@@ -149,10 +159,11 @@ Deno.serve(async (req) => {
     if (!origem) return json({ erro: "Endereço do site inválido." }, 400);
 
     const nomeEntrega: Record<string, string> = { uber: "Entrega via Uber", pac: "Correios PAC", sedex: "Correios SEDEX" };
-    // com desconto, as peças vão numa linha só (a InfinitePay não aceita item com valor negativo)
-    const ipItens = desconto > 0
-      ? [{ quantity: 1, price: Math.round((subtotal - desconto) * 100),
-           description: `Pedido #${pedido.numero} – ${[...qtd.values()].reduce((a, n) => a + n, 0)} peça(s) com cupom ${cupom}`.slice(0, 100) }]
+    // com desconto ou crédito, as peças vão numa linha só (a InfinitePay não aceita item com valor negativo)
+    const abatido = desconto + creditoUsado;
+    const ipItens = abatido > 0
+      ? [{ quantity: 1, price: Math.round((subtotal - abatido) * 100),
+           description: `Pedido #${pedido.numero} – ${[...qtd.values()].reduce((a, n) => a + n, 0)} peça(s) ${cupom ? `com cupom ${cupom}` : "com crédito do Clube"}`.slice(0, 100) }]
       : produtos.map((p) => ({
           quantity: qtd.get(p.id)!, price: Math.round(Number(p.preco) * 100), description: p.nome.slice(0, 100),
         }));
