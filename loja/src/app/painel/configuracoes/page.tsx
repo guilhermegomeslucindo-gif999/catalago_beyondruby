@@ -173,6 +173,36 @@ export default function Configuracoes() {
         <div className="pn-campo"><label htmlFor="hs">Frase</label><input id="hs" value={home.subtitulo} onChange={(e) => setH({ ...home, subtitulo: e.target.value })} /></div>
       </Secao>
 
+      <Secao titulo="Faixas da página inicial" texto="As duas faixas com foto entre as seções de peças. O botão leva para a página escolhida.">
+        {(home.destaques || []).map((d, i) => {
+          const setD = (x: Partial<typeof d>) => setH({ ...home, destaques: home.destaques.map((y, k) => (k === i ? { ...y, ...x } : y)) });
+          return (
+            <div key={i} style={{ display: "grid", gap: 10, paddingBottom: 14, borderBottom: i < home.destaques.length - 1 ? "1px solid var(--pn-borda)" : 0 }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <img src={d.imagem} alt="" style={{ width: 64, height: 48, objectFit: "cover", borderRadius: 6, border: "1px solid var(--pn-borda)" }} />
+                <b style={{ fontSize: 13 }}>Faixa {i + 1}</b>
+              </div>
+              <div className="pn-2col">
+                <div className="pn-campo"><label>Título</label><input value={d.titulo} onChange={(e) => setD({ titulo: e.target.value })} /></div>
+                <div className="pn-campo"><label>Frase</label><input value={d.texto} onChange={(e) => setD({ texto: e.target.value })} /></div>
+                <div className="pn-campo"><label>Texto do botão</label><input value={d.botao} onChange={(e) => setD({ botao: e.target.value })} /></div>
+                <div className="pn-campo"><label>O botão leva para</label>
+                  <select value={d.link} onChange={(e) => setD({ link: e.target.value })}>
+                    <option value="/loja">Todas as peças</option>
+                    <option value="/categoria/aneis">Anéis</option>
+                    <option value="/categoria/brincos">Brincos</option>
+                    <option value="/categoria/colares">Colares &amp; Chokers</option>
+                    <option value="/categoria/pulseiras">Pulseiras</option>
+                    <option value="/categoria/conjuntos">Conjuntos</option>
+                    <option value="/clube">Clube Beyond Ruby</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </Secao>
+
       <MinhaSenha />
 
       <div className="pn-salvar">
