@@ -11,8 +11,7 @@ import { Coroa, IcCheck, IcFechar } from "./Icones";
 // ---------- memória do aparelho ----------
 const K_CUPOM = "br-cupom";
 const K_MEMBRO = "br-clube-membro";
-const K_FECHADO = "br-clube-fechado";
-const SETE_DIAS = 7 * 24 * 3600 * 1000;
+const K_FECHADO = "br-clube-fechado"; // guardado só durante a visita (sessionStorage)
 const ler = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const gravar = (k: string, v: string | null) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch {} };
 export const lerCupom = () => ler(K_CUPOM);
@@ -48,8 +47,8 @@ export function JanelaClube({ cfg, imagem }: { cfg: ConfigClube; imagem?: string
   const podeMostrarSozinha = useCallback(() => {
     if (!cfg.ativo || ehMembro()) return false;
     if (NAO_MOSTRAR.some((c) => window.location.pathname.startsWith(c))) return false;
-    const f = Number(ler(K_FECHADO) || 0);
-    return !f || Date.now() - f > SETE_DIAS;
+    // fechou nesta visita? não insiste; numa nova visita, aparece de novo até ela se cadastrar
+    try { return !sessionStorage.getItem(K_FECHADO); } catch { return true; }
   }, [cfg.ativo]);
 
   // abre sozinha depois de alguns segundos (uma vez por visita)
@@ -90,7 +89,7 @@ export function JanelaClube({ cfg, imagem }: { cfg: ConfigClube; imagem?: string
 
   function fechar() {
     setAberta(false);
-    if (!ehMembro()) gravar(K_FECHADO, String(Date.now()));
+    if (!ehMembro()) { try { sessionStorage.setItem(K_FECHADO, "1"); } catch {} }
   }
 
   async function enviar(e: React.FormEvent) {
