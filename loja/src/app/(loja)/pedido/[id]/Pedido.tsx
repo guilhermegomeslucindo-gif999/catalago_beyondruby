@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import { IcCheck, IcZap } from "@/components/Icones";
 import { apagarCupom, lerCupom } from "@/components/Clube";
 import { useSacola } from "@/components/Sacola";
+import { InfoRetirada } from "../../finalizar/Finalizar";
 import { linkWhats, moeda } from "@/lib/formato";
+import type { ConfigFrete } from "@/lib/tipos";
 import { FUNCOES, SUPABASE_KEY } from "@/lib/config";
 
 type Dados = {
@@ -20,7 +22,7 @@ type Dados = {
 
 const ENTREGA: Record<string, string> = { retirada: "Retirada em Vespasiano", uber: "Entrega via Uber", pac: "Correios PAC", sedex: "Correios SEDEX" };
 
-export function Pedido({ id, whatsapp }: { id: string; whatsapp: string }) {
+export function Pedido({ id, whatsapp, frete }: { id: string; whatsapp: string; frete: ConfigFrete }) {
   const q = useSearchParams();
   const { limpar } = useSacola();
   const [d, setD] = useState<Dados | null>(null);
@@ -102,9 +104,11 @@ export function Pedido({ id, whatsapp }: { id: string; whatsapp: string }) {
       {d.presente && (
         <div className="pedido-presente">
           <span aria-hidden>🎁</span>
-          <div><b>É para presente</b>{d.bilhete ? <p>Bilhete: “{d.bilhete}”</p> : <p>Vai sem preço na embalagem.</p>}</div>
+          <div><b>É para presente</b>{d.bilhete && <p>Bilhete: “{d.bilhete}”</p>}</div>
         </div>
       )}
+
+      {d.entrega_tipo === "retirada" && d.status !== "cancelado" && <div style={{ marginTop: 14 }}><InfoRetirada frete={frete} pago={pago} /></div>}
 
       {d.cashback && d.status !== "cancelado" && (
         <p className="cashback-aviso" style={{ marginTop: 14, fontSize: 13.5 }}>
@@ -123,7 +127,7 @@ export function Pedido({ id, whatsapp }: { id: string; whatsapp: string }) {
       </div>
       {pago && (
         <p className="nota" style={{ marginTop: 18 }}>
-          {d.entrega_tipo === "retirada" ? "Vamos te chamar no WhatsApp para combinar a retirada." :
+          {d.entrega_tipo === "retirada" ? `Lembre: a peça fica separada por ${Math.max(1, Number(frete.retirada?.prazo_dias) || 3)} dias.` :
             d.entrega_tipo === "uber" ? "Vamos te chamar no WhatsApp para combinar o horário da entrega." :
               "Você receberá o código de rastreio pelo WhatsApp assim que o pedido for postado."}
         </p>

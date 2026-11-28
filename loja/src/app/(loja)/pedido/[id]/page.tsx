@@ -7,6 +7,6 @@ export const metadata: Metadata = { title: "Seu pedido", robots: { index: false 
 
 export default async function Pagina({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { loja } = await getConfigs();
-  return <Suspense fallback={<div className="carregando"><div className="giro" />Carregando seu pedido…</div>}><Pedido id={id} whatsapp={loja.whatsapp} /></Suspense>;
+  const { loja, frete } = await getConfigs();
+  return <Suspense fallback={<div className="carregando"><div className="giro" />Carregando seu pedido…</div>}><Pedido id={id} whatsapp={loja.whatsapp} frete={frete} /></Suspense>;
 }

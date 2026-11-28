@@ -208,7 +208,7 @@ function Detalhe({ p, onFechar, onMudou }: { p: PedidoAdm; onFechar: () => void;
         {p.presente && (
           <div className="pn-presente">
             <IPresente />
-            <div><b>Para presente</b> · enviar sem preço na embalagem
+            <div><b>Para presente</b>
               {p.bilhete ? <><div style={{ fontSize: 12.5, color: "var(--pn-suave)", marginTop: 6 }}>Bilhete personalizado (escrever no cartão):</div><div className="bilhete">“{p.bilhete}”</div></> : <div style={{ fontSize: 12.5, color: "var(--pn-suave)" }}>Sem bilhete.</div>}
             </div>
           </div>

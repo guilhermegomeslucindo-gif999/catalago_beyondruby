@@ -188,20 +188,35 @@ Deno.serve(async (req) => {
     if (frete > 0) ipItens.push({ quantity: 1, price: Math.round(frete * 100), description: `Frete – ${nomeEntrega[tipo]}` });
     if (bilheteValor > 0) ipItens.push({ quantity: 1, price: Math.round(bilheteValor * 100), description: "Bilhete personalizado para presente" });
 
+    // endereço já preenchido para a InfinitePay (retirada: o da loja; entrega: o da cliente)
+    const er = cfg.retirada?.endereco;
+    const ipEndereco = tipo === "retirada"
+      ? (er?.cep && er?.rua ? { cep: String(er.cep).replace(/\D/g, ""), street: er.rua, number: er.numero || "s/n", complement: er.complemento || "", neighborhood: er.bairro || "", city: er.cidade || "", state: er.uf || "" } : null)
+      : (endereco ? { cep: endereco.cep, street: endereco.rua, number: endereco.numero, complement: endereco.complemento, neighborhood: endereco.bairro, city: endereco.cidade, state: endereco.uf } : null);
+
     const handle = await handleInfinitePay(db);
-    const r = await fetch(`${IP_API}/links`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        handle,
-        order_nsu: pedido.id,
-        redirect_url: `${origem}/pedido/${pedido.id}?t=${pedido.token}`,
-        webhook_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/infinitepay-webhook`,
-        customer: { name: nome, email, phone_number: `+${whats.length <= 11 ? "55" + whats : whats}` },
-        items: ipItens,
-      }),
-    });
-    const link = await r.json().catch(() => null);
+    const criarLink = async (comEndereco: boolean) => {
+      const r = await fetch(`${IP_API}/links`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          handle,
+          order_nsu: pedido.id,
+          redirect_url: `${origem}/pedido/${pedido.id}?t=${pedido.token}`,
+          webhook_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/infinitepay-webhook`,
+          customer: { name: nome, email, phone_number: `+${whats.length <= 11 ? "55" + whats : whats}` },
+          items: ipItens,
+          ...(comEndereco && ipEndereco ? { address: ipEndereco } : {}),
+        }),
+      });
+      return { r, link: await r.json().catch(() => null) };
+    };
+    let { r, link } = await criarLink(true);
+    // se a InfinitePay recusar o endereço, tenta de novo sem ele (nunca trava a compra)
+    if ((!r.ok || !(link?.url ?? link?.checkout_url)) && ipEndereco) {
+      console.error("InfinitePay recusou o link com endereço, tentando sem", r.status, JSON.stringify(link));
+      ({ r, link } = await criarLink(false));
+    }
     const url = link?.url ?? link?.checkout_url;
     if (!r.ok || !url) {
       await db.from("pedidos").update({ status: "cancelado", observacao: "Falha ao gerar link de pagamento" }).eq("id", pedido.id);

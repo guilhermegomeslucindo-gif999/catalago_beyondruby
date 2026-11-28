@@ -1,5 +1,13 @@
 import type { ConfigFrete } from "./tipos";
 
+// endereço da retirada em uma linha ("Rua X, 10 · Vida Nova · Vespasiano/MG")
+export function enderecoRetirada(cfg: ConfigFrete) {
+  const e = cfg.retirada?.endereco;
+  if (!e?.rua) return "";
+  return [`${e.rua}${e.numero ? `, ${e.numero}` : ""}${e.complemento ? ` (${e.complemento})` : ""}`, e.bairro, e.cidade && `${e.cidade}${e.uf ? `/${e.uf}` : ""}`].filter(Boolean).join(" · ");
+}
+export const prazoRetirada = (cfg: ConfigFrete) => Math.max(1, Number(cfg.retirada?.prazo_dias) || 3);
+
 // Mesmas regras da função "checkout" no servidor (que é quem decide o valor final).
 export type TipoEntrega = "retirada" | "uber" | "pac" | "sedex";
 
@@ -20,7 +28,8 @@ export function opcoesEntrega(cfg: ConfigFrete, cep: string, subtotal: number, r
   const d = cep.replace(/\D/g, "");
   const ops: OpcaoEntrega[] = [];
   if (cfg.retirada?.ativo) {
-    ops.push({ tipo: "retirada", titulo: `Retirada em ${cfg.retirada.local}`, detalhe: cfg.retirada.texto || "Combinamos pelo WhatsApp.", valor: 0, gratis: true });
+    const end = cfg.retirada.endereco;
+    ops.push({ tipo: "retirada", titulo: `Retirada em ${cfg.retirada.local}`, detalhe: end?.rua ? [end.bairro, `fica separada por ${prazoRetirada(cfg)} dias`].filter(Boolean).join(" · ") : cfg.retirada.texto || "Combinamos pelo WhatsApp.", valor: 0, gratis: true });
   }
   if (cfg.uber?.ativo && (d.length < 8 || d.startsWith("3"))) {
     const r = cfg.uber.regioes.find((x) => x.id === regiaoUber);

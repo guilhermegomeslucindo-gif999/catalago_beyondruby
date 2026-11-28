@@ -22,10 +22,11 @@ export type Produto = {
 export type Categoria = { slug: string; nome: string; subtitulo: string | null; imagem_url: string | null; ordem: number; na_capa?: boolean };
 
 export type RegiaoUber = { id: string; nome: string; valor: number };
+export type EnderecoRetirada = { rua: string; numero: string; complemento?: string; bairro: string; cidade: string; uf: string; cep: string };
 export type ConfigFrete = {
   frete_gratis_minimo: number;
   frete_gratis_tipos: string[];
-  retirada: { ativo: boolean; local: string; texto?: string };
+  retirada: { ativo: boolean; local: string; texto?: string; endereco?: EnderecoRetirada; prazo_dias?: number };
   uber: { ativo: boolean; texto?: string; regioes: RegiaoUber[] };
   correios: {
     ativo: boolean;

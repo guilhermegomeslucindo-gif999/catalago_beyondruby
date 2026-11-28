@@ -6,7 +6,7 @@ import { apagarCupom, lerCupom, SeletorAniversario } from "@/components/Clube";
 import { IcCadeado } from "@/components/Icones";
 import { LinhaItem, ProgressoFrete, useSacola } from "@/components/Sacola";
 import { moeda } from "@/lib/formato";
-import { opcoesEntrega, type TipoEntrega } from "@/lib/frete";
+import { enderecoRetirada, opcoesEntrega, prazoRetirada, type TipoEntrega } from "@/lib/frete";
 import { FUNCOES, SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
 import type { ConfigClube, ConfigFrete } from "@/lib/tipos";
 
@@ -192,7 +192,7 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
             <div className="campos cep" style={{ marginBottom: 14 }}>
               <div className="campo"><label htmlFor="cep">CEP</label><input id="cep" inputMode="numeric" autoComplete="postal-code" placeholder="00000-000" value={f.cep} onChange={set("cep")} required={!!precisaEndereco} /></div>
               <div className="campo" style={{ alignSelf: "end" }}>
-                <span className="dica-campo">{buscandoCep ? "Buscando endereço…" : <a href="https://buscacepinter.correios.com.br/" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>Não sei meu CEP</a>}</span>
+                <span className="dica-campo">{tipo === "retirada" ? "Para retirada não precisa de CEP" : buscandoCep ? "Buscando endereço…" : <a href="https://buscacepinter.correios.com.br/" target="_blank" rel="noopener" style={{ textDecoration: "underline" }}>Não sei meu CEP</a>}</span>
               </div>
             </div>
             <div className="opcoes" role="radiogroup" aria-label="Forma de entrega">
@@ -230,14 +230,14 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
                 </div>
               </div>
             )}
-            {tipo === "retirada" && <p className="dica-campo" style={{ marginTop: 12, fontSize: 13, color: "var(--suave)" }}>Depois do pagamento, combinamos o local e o horário da retirada pelo WhatsApp.</p>}
+            {tipo === "retirada" && <InfoRetirada frete={frete} />}
           </section>
 
           <section className="bloco">
             <h2><span>3</span>É para presente?</h2>
             <div className="presente-opcoes" role="radiogroup" aria-label="É para presente?">
               <label className={`presente-op${!presente ? " on" : ""}`}><input type="radio" name="presente" checked={!presente} onChange={() => setPresente(false)} /><span><b>Não</b><small>É para mim</small></span></label>
-              <label className={`presente-op${presente ? " on" : ""}`}><input type="radio" name="presente" checked={presente} onChange={() => setPresente(true)} /><span><b>Sim</b><small>Vai sem preço na embalagem</small></span></label>
+              <label className={`presente-op${presente ? " on" : ""}`}><input type="radio" name="presente" checked={presente} onChange={() => setPresente(true)} /><span><b>Sim</b><small>É para presentear</small></span></label>
             </div>
             {presente && (
               <div className="presente-extra">
@@ -308,6 +308,20 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
           </section>
         </aside>
       </form>
+    </div>
+  );
+}
+
+// endereço e prazo da retirada (também usado na página do pedido)
+export function InfoRetirada({ frete, pago }: { frete: ConfigFrete; pago?: boolean }) {
+  const end = enderecoRetirada(frete);
+  const dias = prazoRetirada(frete);
+  return (
+    <div className="retirada-info">
+      <b>Endereço para retirada</b>
+      <p>{end || `${frete.retirada.local}. O endereço exato é enviado pelo WhatsApp.`}</p>
+      <p className="prazo"><b>Sua peça fica separada por {dias} {dias === 1 ? "dia" : "dias"}</b> {pago ? "a partir da confirmação do pagamento" : "após a confirmação do pagamento"}. Depois desse prazo, ela não fica mais reservada.</p>
+      <p className="obs">{pago ? "Vamos te chamar no WhatsApp para combinar o horário." : "O horário a gente combina pelo WhatsApp depois do pagamento."}</p>
     </div>
   );
 }

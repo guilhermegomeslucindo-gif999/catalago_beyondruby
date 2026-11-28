@@ -777,3 +777,11 @@ body.tem-barra .flutua-clube{bottom:calc(152px + var(--safe-b))}
   .sacola-rodape .bt-vazado{min-height:40px;border-color:transparent;text-decoration:underline;text-underline-offset:3px}
   .sacola-rodape .nota{display:none}
 }
+
+/* retirada: endereço e prazo */
+.retirada-info{margin-top:12px;border:1px solid var(--linha);background:var(--creme);padding:13px 15px;display:grid;gap:5px;font-size:13.5px}
+.retirada-info > b{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--vinho)}
+.retirada-info p{color:var(--tinta);line-height:1.5}
+.retirada-info .prazo{background:#fff7f0;border-left:3px solid #e07b2a;padding:7px 10px;margin-top:4px}
+.retirada-info .prazo b{color:#a3521b}
+.retirada-info .obs{font-size:12.5px;color:var(--suave)}

@@ -52,7 +52,7 @@ export default function Configuracoes() {
     const regioes = frete!.uber.regioes.filter((r) => r.nome.trim()).map((r) => ({ ...r, id: r.id || slugify(r.nome).slice(0, 30), valor: num(String(r.valor)) }));
     const linhas = [
       { chave: "loja", valor: { ...loja!, bilhete_valor: num(String(loja!.bilhete_valor ?? 1)), whatsapp: zap, instagram: loja!.instagram.replace(/^@/, "").trim(), avisos: loja!.avisos.map((a) => a.trim()).filter(Boolean) } },
-      { chave: "frete", valor: { ...frete!, frete_gratis_minimo: num(String(frete!.frete_gratis_minimo)), uber: { ...frete!.uber, regioes },
+      { chave: "frete", valor: { ...frete!, retirada: { ...frete!.retirada, prazo_dias: Math.max(1, Math.round(num(String(frete!.retirada.prazo_dias ?? 3)))) }, frete_gratis_minimo: num(String(frete!.frete_gratis_minimo)), uber: { ...frete!.uber, regioes },
         correios: { ...frete!.correios, tabela: Object.fromEntries(ZONAS.map(([z]) => [z, { pac: num(String(frete!.correios.tabela[z].pac)), sedex: num(String(frete!.correios.tabela[z].sedex)) }])) } } },
       { chave: "home", valor: home },
       { chave: "clube", valor: { ...clube!, valor: num(String(clube!.valor)), minimo: num(String(clube!.minimo)), cashback_pct: num(String(clube!.cashback_pct)),
@@ -128,7 +128,16 @@ export default function Configuracoes() {
         {ativo("Oferecer retirada", frete.retirada.ativo, (v) => setF({ ...frete, retirada: { ...frete.retirada, ativo: v } }))}
         <div className="pn-2col">
           <div className="pn-campo"><label htmlFor="rl">Local mostrado no site</label><input id="rl" value={frete.retirada.local} onChange={(e) => setF({ ...frete, retirada: { ...frete.retirada, local: e.target.value } })} /></div>
-          <div className="pn-campo"><label htmlFor="rt">Texto</label><input id="rt" value={frete.retirada.texto || ""} onChange={(e) => setF({ ...frete, retirada: { ...frete.retirada, texto: e.target.value } })} /></div>
+          <div className="pn-campo"><label htmlFor="rt">Texto (quando não houver endereço)</label><input id="rt" value={frete.retirada.texto || ""} onChange={(e) => setF({ ...frete, retirada: { ...frete.retirada, texto: e.target.value } })} /></div>
+        </div>
+        <p style={{ fontSize: 12.5, color: "var(--pn-suave)", margin: "4px 0 -4px" }}>Endereço mostrado na finalização, na página do pedido e enviado à InfinitePay (para a cliente não precisar digitar CEP).</p>
+        <div className="pn-2col">
+          {([["rua", "Rua"], ["numero", "Número"], ["complemento", "Complemento"], ["bairro", "Bairro"], ["cidade", "Cidade"], ["uf", "UF"], ["cep", "CEP"]] as const).map(([k, rot]) => (
+            <div key={k} className="pn-campo"><label htmlFor={`re-${k}`}>{rot}</label>
+              <input id={`re-${k}`} value={frete.retirada.endereco?.[k] || ""} inputMode={k === "cep" || k === "numero" ? "numeric" : undefined}
+                onChange={(e) => setF({ ...frete, retirada: { ...frete.retirada, endereco: { rua: "", numero: "", bairro: "", cidade: "", uf: "", cep: "", ...frete.retirada.endereco, [k]: k === "uf" ? e.target.value.toUpperCase().slice(0, 2) : k === "cep" ? e.target.value.replace(/\D/g, "").slice(0, 8) : e.target.value } } })} /></div>
+          ))}
+          <div className="pn-campo"><label htmlFor="re-prazo">Prazo para retirar</label><div className="pn-prefixo"><span>dias</span><input id="re-prazo" inputMode="numeric" value={String(frete.retirada.prazo_dias ?? 3)} onChange={(e) => setF({ ...frete, retirada: { ...frete.retirada, prazo_dias: e.target.value as unknown as number } })} /></div><span className="ajuda">Depois disso a peça não fica mais reservada.</span></div>
         </div>
       </Secao>
 

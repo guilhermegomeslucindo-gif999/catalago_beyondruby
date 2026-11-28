@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getConfigs } from "@/lib/dados";
 import { moeda } from "@/lib/formato";
+import { enderecoRetirada, prazoRetirada } from "@/lib/frete";
 
 export const metadata: Metadata = { title: "Entregas e frete" };
 export const revalidate = 60;
@@ -15,7 +16,7 @@ export default async function Entregas() {
       <p>Você escolhe a forma de entrega na finalização da compra, e o valor já aparece antes do pagamento.</p>
       <p><b>Frete grátis no PAC</b> em pedidos a partir de {moeda(frete.frete_gratis_minimo)}.</p>
 
-      {frete.retirada.ativo && (<><h2>Retirada</h2><p>Grátis, em {frete.retirada.local}. Depois do pagamento combinamos o local e o horário pelo WhatsApp.</p></>)}
+      {frete.retirada.ativo && (<><h2>Retirada</h2><p>Grátis, em {enderecoRetirada(frete) || frete.retirada.local}. A peça fica separada por <b>{prazoRetirada(frete)} dias</b> após a confirmação do pagamento; depois desse prazo, ela não fica mais reservada. O horário combinamos pelo WhatsApp.</p></>)}
 
       {frete.uber.ativo && (
         <>
