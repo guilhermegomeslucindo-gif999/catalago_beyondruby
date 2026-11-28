@@ -6,6 +6,7 @@ import { moeda, separarNome } from "@/lib/formato";
 import { SUPABASE_KEY, SUPABASE_URL } from "@/lib/config";
 import type { ConfigClube } from "@/lib/tipos";
 import { LembreteClube } from "./Clube";
+import { CombinaSacola, type Sugestao } from "./CombinaSacola";
 import { IcFechar, IcSacola } from "./Icones";
 
 export type ItemSacola = { id: string; slug: string; nome: string; tom: string; preco: number; imagem: string | null; qtd: number };
@@ -45,7 +46,7 @@ function registrarAdicao(id: string) {
   }).catch(() => {});
 }
 
-export function SacolaProvider({ children, freteGratisMinimo, clube }: { children: ReactNode; freteGratisMinimo: number; clube: ConfigClube }) {
+export function SacolaProvider({ children, freteGratisMinimo, clube, sugestoes = [] }: { children: ReactNode; freteGratisMinimo: number; clube: ConfigClube; sugestoes?: Sugestao[] }) {
   const [itens, setItens] = useState<ItemSacola[]>([]);
   const [aberta, setAberta] = useState(false);
   const [pronta, setPronta] = useState(false);
@@ -113,7 +114,10 @@ export function SacolaProvider({ children, freteGratisMinimo, clube }: { childre
               <Link href="/loja" className="bt bt-cheio" style={{ marginTop: 20 }} onClick={() => setAberta(false)}>Ver peças</Link>
             </div>
           ) : (
-            itens.map((i) => <LinhaItem key={i.id} item={i} onFechar={() => setAberta(false)} />)
+            <>
+              {itens.map((i) => <LinhaItem key={i.id} item={i} onFechar={() => setAberta(false)} />)}
+              <CombinaSacola sugestoes={sugestoes} itens={itens} total={total} freteMin={freteGratisMinimo} clube={clube} adicionar={adicionar} onFechar={() => setAberta(false)} />
+            </>
           )}
         </div>
         {itens.length > 0 && (

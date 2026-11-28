@@ -5,6 +5,7 @@ import { AcoesPeca } from "@/components/AcoesPeca";
 import { AvaliacoesPeca, NotaPeca } from "@/components/Avaliacoes";
 import { BotaoFavorito, RegistrarVista } from "@/components/Favoritos";
 import { GuiaTamanhos } from "@/components/GuiaTamanhos";
+import { poucasUnidades, UltimasUnidades } from "@/components/Estoque";
 import { VistasRecentes } from "@/components/Vistas";
 import { CardPeca, mensagemAviseMe } from "@/components/CardPeca";
 import { Galeria } from "@/components/Galeria";
@@ -76,6 +77,7 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
               </>
             )}
 
+            {poucasUnidades(p.estoque, p.status) && <UltimasUnidades estoque={p.estoque!} />}
             {tipoGuia && <GuiaTamanhos tipo={tipoGuia} tamanho={tamanho} />}
 
             {esg ? (
@@ -88,7 +90,7 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
                 </div>
               </>
             ) : (
-              <AcoesPeca p={{ id: p.id, slug: p.slug, nome: p.nome, tom: p.tom, preco: p.preco, imagem: p.produto_imagens[0]?.url ?? null }} />
+              <AcoesPeca p={{ id: p.id, slug: p.slug, nome: p.nome, tom: p.tom, preco: p.preco, imagem: p.produto_imagens[0]?.url ?? null }} max={p.estoque ?? undefined} />
             )}
 
             <div className="confianca">

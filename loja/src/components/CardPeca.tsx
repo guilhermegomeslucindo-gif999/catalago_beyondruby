@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Produto } from "@/lib/tipos";
 import { linkWhats, moeda, separarNome } from "@/lib/formato";
 import { BotaoAdicionar } from "./BotaoAdicionar";
+import { poucasUnidades, textoUltimas } from "./Estoque";
 import { BotaoFavorito } from "./Favoritos";
 import { IcZap } from "./Icones";
 
@@ -18,7 +19,7 @@ export function CardPeca({ p, whatsapp, prioridade }: { p: Produto; whatsapp: st
       <Link href={`/peca/${p.slug}`} className="card-foto" aria-label={p.nome}>
         {a && <img className={`a${b ? " tem-b" : ""}`} src={a.url} alt={a.alt || p.nome} width={600} height={750} loading={prioridade ? "eager" : "lazy"} decoding="async" />}
         {b && !esg && <img className="b" src={b.url} alt="" width={600} height={750} loading="lazy" decoding="async" />}
-        {esg ? <span className="selo esg">Esgotado</span> : p.novidade ? <span className="selo">Novidade</span> : null}
+        {esg ? <span className="selo esg">Esgotado</span> : poucasUnidades(p.estoque, p.status) ? <span className="selo ultimas-selo">{textoUltimas(p.estoque!)}</span> : p.novidade ? <span className="selo">Novidade</span> : null}
       </Link>
       <BotaoFavorito id={p.id} nome={titulo} />
       <div className="card-info">

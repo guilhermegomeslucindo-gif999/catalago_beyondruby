@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { moeda } from "@/lib/formato";
 import { useSacola, type ItemSacola } from "./Sacola";
 
-export function AcoesPeca({ p }: { p: Omit<ItemSacola, "qtd"> }) {
+export function AcoesPeca({ p, max = 10 }: { p: Omit<ItemSacola, "qtd">; max?: number }) {
   const { adicionar } = useSacola();
   const [qtd, setQtd] = useState(1);
   const [ok, setOk] = useState(false);
@@ -33,7 +33,7 @@ export function AcoesPeca({ p }: { p: Omit<ItemSacola, "qtd"> }) {
           <div className="qtd-sel" role="group" aria-label="Quantidade">
             <button onClick={() => setQtd(Math.max(1, qtd - 1))} aria-label="Diminuir quantidade">−</button>
             <span aria-live="polite">{qtd}</span>
-            <button onClick={() => setQtd(Math.min(10, qtd + 1))} aria-label="Aumentar quantidade">+</button>
+            <button onClick={() => setQtd(Math.min(Math.max(1, Math.min(10, max)), qtd + 1))} aria-label="Aumentar quantidade" disabled={qtd >= Math.min(10, max)}>+</button>
           </div>
           <button className="bt bt-cheio" onClick={add}>{ok ? "Adicionado ✓" : "Adicionar à sacola"}</button>
         </div>
