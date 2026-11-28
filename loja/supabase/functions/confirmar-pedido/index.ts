@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: v } = await db.from("pedidos")
-      .select("numero,status,cliente_nome,entrega_tipo,entrega_regiao,subtotal,frete,total,cupom,desconto,credito_usado,checkout_url,ip_receipt_url,criado_em,pedido_itens(nome,preco,quantidade)")
+      .select("numero,status,cliente_nome,entrega_tipo,entrega_regiao,subtotal,frete,total,cupom,desconto,credito_usado,checkout_url,ip_receipt_url,criado_em,presente,bilhete,bilhete_valor,pedido_itens(nome,preco,quantidade)")
       .eq("id", id).single();
     // cashback que este pedido gerou (ou vai gerar, se ainda não foi pago)
     const { data: crs } = await db.from("creditos").select("valor,status,expira_em").eq("pedido_origem", id).neq("status", "cancelado");
@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
       entrega_tipo: v!.entrega_tipo, entrega_regiao: v!.entrega_regiao,
       subtotal: v!.subtotal, frete: v!.frete, total: v!.total,
       cupom: v!.cupom, desconto: v!.desconto, credito_usado: v!.credito_usado, cashback,
+      presente: v!.presente, bilhete: v!.bilhete, bilhete_valor: v!.bilhete_valor,
       pagar_url: v!.status === "aguardando_pagamento" ? v!.checkout_url : null,
       comprovante: v!.ip_receipt_url, criado_em: v!.criado_em, itens: v!.pedido_itens,
     });

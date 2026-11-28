@@ -37,6 +37,8 @@ export function JanelaClube({ cfg, imagem }: { cfg: ConfigClube; imagem?: string
   const [email, setEmail] = useState("");
   const [zap, setZap] = useState("");
   const [aceita, setAceita] = useState(false);
+  const [dia, setDia] = useState("");
+  const [mes, setMes] = useState("");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [codigo, setCodigo] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function JanelaClube({ cfg, imagem }: { cfg: ConfigClube; imagem?: string
   useEffect(() => {
     const abrir = () => {
       const c = lerCupom();
-      if (ehMembro() && c) { setCodigo(c); }
+      if (ehMembro()) { if (c) setCodigo(c); else setJaCliente(true); }
       setAberta(true);
     };
     window.addEventListener("br-abrir-clube", abrir);
@@ -96,12 +98,13 @@ export function JanelaClube({ cfg, imagem }: { cfg: ConfigClube; imagem?: string
     e.preventDefault();
     setErro("");
     if (!aceita) return setErro("Marque a opção para receber as novidades.");
+    if (!!dia !== !!mes) return setErro("Escolha o dia e o mês do seu aniversário (ou deixe os dois em branco).");
     setEnviando(true);
     try {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/entrar_clube`, {
         method: "POST",
         headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ p_nome: nome, p_email: email, p_whatsapp: zap, p_aceita: aceita }),
+        body: JSON.stringify({ p_nome: nome, p_email: email, p_whatsapp: zap, p_aceita: aceita, p_dia: dia ? Number(dia) : null, p_mes: mes ? Number(mes) : null }),
       });
       const d = await r.json();
       if (!r.ok || !d.ok) throw new Error(d.erro || "Não foi possível entrar agora. Tente de novo.");
@@ -140,12 +143,14 @@ export function JanelaClube({ cfg, imagem }: { cfg: ConfigClube; imagem?: string
                 <li><IcCheck /><span><b>{cfg.cashback_pct}% de volta</b> em crédito nas compras seguintes</span></li>
               </ul>
               <div className="clube-campos">
-                <label className="sr" htmlFor="cl-nome">Primeiro nome</label>
-                <input ref={campo} id="cl-nome" placeholder="Seu primeiro nome" autoComplete="given-name" value={nome} onChange={(e) => setNome(e.target.value)} required />
-                <label className="sr" htmlFor="cl-email">E-mail</label>
-                <input id="cl-email" type="email" inputMode="email" placeholder="Seu e-mail" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <label className="sr" htmlFor="cl-zap">WhatsApp</label>
-                <input id="cl-zap" type="tel" inputMode="tel" placeholder="WhatsApp com DDD" autoComplete="tel-national" value={zap} onChange={(e) => setZap(mascaraFone(e.target.value))} required />
+                <div className="clube-campo"><label htmlFor="cl-nome">Nome</label>
+                  <input ref={campo} id="cl-nome" placeholder="Seu nome" autoComplete="given-name" value={nome} onChange={(e) => setNome(e.target.value)} required /></div>
+                <div className="clube-campo"><label htmlFor="cl-email">E-mail</label>
+                  <input id="cl-email" type="email" inputMode="email" placeholder="seu@email.com" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+                <div className="clube-campo"><label htmlFor="cl-zap">WhatsApp</label>
+                  <input id="cl-zap" type="tel" inputMode="tel" placeholder="(31) 98765-4321" autoComplete="tel-national" value={zap} onChange={(e) => setZap(mascaraFone(e.target.value))} required /></div>
+                <div className="clube-campo"><label htmlFor="cl-dia">Aniversário <small>(opcional)</small></label>
+                  <SeletorAniversario dia={dia} mes={mes} setDia={setDia} setMes={setMes} idDia="cl-dia" /></div>
               </div>
               <label className="clube-aceite"><input type="checkbox" checked={aceita} onChange={(e) => setAceita(e.target.checked)} />Quero receber novidades e ofertas da Beyond Ruby por e-mail</label>
               {erro && <p className="clube-erro" role="alert">{erro}</p>}
@@ -172,6 +177,40 @@ export function JanelaClube({ cfg, imagem }: { cfg: ConfigClube; imagem?: string
         </div>
       </div>
     </>
+  );
+}
+
+const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+// dia + mês do aniversário (sem ano); usado no Clube e na finalização
+export function SeletorAniversario({ dia, mes, setDia, setMes, idDia }: { dia: string; mes: string; setDia: (v: string) => void; setMes: (v: string) => void; idDia: string }) {
+  const maxDia = mes ? new Date(2000, Number(mes), 0).getDate() : 31;
+  return (
+    <div className="aniv">
+      <span className="aniv-sel">
+        <select id={idDia} value={dia} onChange={(e) => setDia(e.target.value)} aria-label="Dia do aniversário">
+          <option value="">Dia</option>
+          {Array.from({ length: maxDia }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
+        </select>
+      </span>
+      <span className="aniv-sel">
+        <select value={mes} onChange={(e) => { setMes(e.target.value); const m = new Date(2000, Number(e.target.value), 0).getDate(); if (e.target.value && Number(dia) > m) setDia(""); }} aria-label="Mês do aniversário">
+          <option value="">Mês</option>
+          {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+        </select>
+      </span>
+    </div>
+  );
+}
+
+// botão flutuante do Clube (fica em cima do botão do WhatsApp)
+export function FlutuaClube({ cfg }: { cfg: ConfigClube }) {
+  const caminho = usePathname();
+  if (!cfg.ativo || caminho.startsWith("/finalizar") || caminho.startsWith("/pedido") || caminho.startsWith("/avaliar")) return null;
+  const v = moeda(cfg.valor).replace(",00", "");
+  return (
+    <button type="button" className="flutua-clube" onClick={abrirClube} aria-label={`Clube Beyond Ruby: ganhe ${v} na primeira compra`}>
+      <Coroa /><span className="flutua-clube-v">{v.replace(/\s/g, "")}</span><span className="flutua-clube-txt">Ganhe {v}</span>
+    </button>
   );
 }
 

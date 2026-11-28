@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { supabasePublico } from "./supabase";
-import type { Categoria, ConfigClube, ConfigFrete, ConfigHome, ConfigLoja, Produto } from "./tipos";
+import type { Categoria, ConfigClube, ConfigFrete, ConfigHome, ConfigLoja, Produto, ResumoAvaliacoes } from "./tipos";
 
 const CAMPOS = "id,slug,nome,categoria,tom,preco,descricao,detalhes,status,novidade,ordem,estoque,criado_em,produto_imagens(url,alt,ordem)";
 
@@ -47,4 +47,10 @@ export const getConfigs = cache(async () => {
 export const getMaisVendidas = cache(async (): Promise<string[]> => {
   const { data } = await supabasePublico().rpc("mais_vendidas", { p_limite: 12 });
   return ((data as { produto_id: string }[]) || []).map((r) => r.produto_id);
+});
+
+export const getAvaliacoes = cache(async (produtoId?: string, limite = 12): Promise<ResumoAvaliacoes> => {
+  const { data } = await supabasePublico().rpc("avaliacoes_publicas", { p_produto: produtoId ?? null, p_limite: limite });
+  const r = (data as ResumoAvaliacoes | null) ?? { media: null, total: 0, lista: [] };
+  return { media: r.media === null ? null : Number(r.media), total: Number(r.total) || 0, lista: r.lista || [] };
 });

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { foneBonito, linkWhats, MENSAGEM_PADRAO } from "@/lib/formato";
+import { LinkFavoritas } from "./Favoritos";
 import { useSacola } from "./Sacola";
 import { Coroa, IcBusca, IcFechar, IcInsta, IcMenu, IcSacola, IcSeta, IcZap } from "./Icones";
 
@@ -63,6 +64,7 @@ export function Cabecalho({ categorias, whatsapp, instagram }: { categorias: Cat
           </Link>
           <div className="topo-dir">
             <a className="bt-ic so-desk" href={linkWhats(whatsapp, MENSAGEM_PADRAO)} target="_blank" rel="noopener" aria-label="Falar no WhatsApp"><IcZap style={{ color: "#1f9d55" }} /></a>
+            <LinkFavoritas />
             <button className="bt-ic" onClick={abrir} aria-label={`Abrir sacola${quantidade ? `, ${quantidade} itens` : ""}`}>
               <IcSacola />
               {pronta && quantidade > 0 && <span className="contador">{quantidade}</span>}
@@ -85,6 +87,7 @@ export function Cabecalho({ categorias, whatsapp, instagram }: { categorias: Cat
         <nav className="gaveta-corpo menu-lista">
           <Link href="/loja">Todas as peças <IcSeta /></Link>
           {categorias.map((c) => <Link key={c.slug} href={`/categoria/${c.slug}`}>{c.nome} <IcSeta /></Link>)}
+          <Link href="/favoritas">Minhas favoritas <IcSeta /></Link>
           <Link href="/sobre">Sobre a Beyond Ruby <IcSeta /></Link>
           <Link href="/cuidados">Cuidados com as peças <IcSeta /></Link>
           <Link href="/trocas">Trocas e garantia <IcSeta /></Link>

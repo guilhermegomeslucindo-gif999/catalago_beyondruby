@@ -9,12 +9,17 @@ import { IBaixar, IBusca, IClientes, ICoracao, IDinheiro, IPedidos, ITicket } fr
 type Membro = {
   id: string; nome: string; email: string; whatsapp: string; codigo: string | null; origem: "site" | "compra";
   aceita_novidades: boolean; cupom_usado_em: string | null; criado_em: string;
+  aniversario_dia: number | null; aniversario_mes: number | null;
 };
 type Credito = { email: string; valor: number; status: string; expira_em: string | null };
 type PedidoPago = { cliente_email: string; total: number };
 type Linha = Membro & { compras: number; gasto: number; saldo: number; pendente: number };
 
-const ABAS: [string, string][] = [["", "Todos"], ["nao", "Ainda não compraram"], ["sim", "Já compraram"], ["credito", "Com crédito"]];
+const MES_ATUAL = new Date().getMonth() + 1;
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const ABAS: [string, string][] = [["", "Todos"], ["aniv", `Aniversariantes de ${MESES[MES_ATUAL - 1]}`], ["nao", "Ainda não compraram"], ["sim", "Já compraram"], ["credito", "Com crédito"]];
+const aniv = (x: { aniversario_dia: number | null; aniversario_mes: number | null }) =>
+  x.aniversario_dia && x.aniversario_mes ? `${String(x.aniversario_dia).padStart(2, "0")}/${String(x.aniversario_mes).padStart(2, "0")}` : "";
 const zapCompleto = (z: string) => (z.length <= 11 ? `55${z}` : z);
 
 export default function Clientes() {
@@ -57,23 +62,25 @@ export default function Clientes() {
       conversao: l.length ? Math.round((compraram / l.length) * 100) : 0,
       creditos: l.reduce((s, x) => s + x.saldo, 0),
       cuponsUsados: l.filter((x) => x.cupom_usado_em).length,
+      aniversariantes: l.filter((x) => x.aniversario_mes === MES_ATUAL).length,
     };
   }, [linhas]);
 
   const vis = useMemo(() => {
     const t = q.trim().toLowerCase();
     const d = t.replace(/\D/g, "");
-    return (linhas || []).filter((x) =>
-      (aba === "" || (aba === "nao" && x.compras === 0) || (aba === "sim" && x.compras > 0) || (aba === "credito" && x.saldo > 0)) &&
+    const l = (linhas || []).filter((x) =>
+      (aba === "" || (aba === "aniv" && x.aniversario_mes === MES_ATUAL) || (aba === "nao" && x.compras === 0) || (aba === "sim" && x.compras > 0) || (aba === "credito" && x.saldo > 0)) &&
       (!t || x.nome.toLowerCase().includes(t) || x.email.includes(t) || (d.length >= 4 && x.whatsapp.includes(d))));
+    return aba === "aniv" ? l.sort((a, b) => (a.aniversario_dia || 0) - (b.aniversario_dia || 0)) : l;
   }, [linhas, aba, q]);
 
   // planilha para anúncios (Meta/Google) e e-mail marketing: só quem autorizou novidades
   function baixar() {
     const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const cab = ["nome", "email", "telefone", "entrou_em", "origem", "compras", "total_gasto", "credito_disponivel"];
+    const cab = ["nome", "email", "telefone", "aniversario", "entrou_em", "origem", "compras", "total_gasto", "credito_disponivel"];
     const corpo = (linhas || []).filter((x) => x.aceita_novidades).map((x) => [
-      x.nome, x.email, `+${zapCompleto(x.whatsapp)}`, new Date(x.criado_em).toLocaleDateString("pt-BR"),
+      x.nome, x.email, `+${zapCompleto(x.whatsapp)}`, aniv(x), new Date(x.criado_em).toLocaleDateString("pt-BR"),
       x.origem === "site" ? "Site (cadastro no Clube)" : "Compra", x.compras, x.gasto.toFixed(2).replace(".", ","), x.saldo.toFixed(2).replace(".", ","),
     ].map(esc).join(";"));
     const csv = "﻿" + [cab.join(";"), ...corpo].join("\n");
@@ -114,12 +121,13 @@ export default function Clientes() {
         ) : (
           <>
             <table className="pn-tabela pn-so-pc">
-              <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Entrou</th><th>Cupom</th><th className="dir">Compras</th><th className="dir">Crédito</th></tr></thead>
+              <thead><tr><th>Cliente</th><th>WhatsApp</th><th>Aniversário</th><th>Entrou</th><th>Cupom</th><th className="dir">Compras</th><th className="dir">Crédito</th></tr></thead>
               <tbody>
                 {vis.map((x) => (
                   <tr key={x.id} style={{ cursor: "default" }}>
                     <td><div className="forte">{x.nome}</div><div className="fraco">{x.email}{!x.aceita_novidades && " · sem autorização de novidades"}</div></td>
-                    <td><a href={linkWhats(zapCompleto(x.whatsapp), `Oi, ${x.nome}! Aqui é da Beyond Ruby.`)} target="_blank" rel="noopener" style={{ color: "var(--pn-acento)", fontWeight: 600 }}>{foneBonito(x.whatsapp)}</a></td>
+                    <td><a href={linkWhats(zapCompleto(x.whatsapp), aba === "aniv" ? `Oi, ${x.nome}! Aqui é da Beyond Ruby 💕 Vimos que este é o mês do seu aniversário, parabéns! 🎉` : `Oi, ${x.nome}! Aqui é da Beyond Ruby.`)} target="_blank" rel="noopener" style={{ color: "var(--pn-acento)", fontWeight: 600 }}>{foneBonito(x.whatsapp)}</a></td>
+                    <td>{aniv(x) ? <span className={x.aniversario_mes === MES_ATUAL ? "pn-aniv mes" : "pn-aniv"}>🎂 {aniv(x)}</span> : <span className="fraco">—</span>}</td>
                     <td className="fraco"><div>{dataCurta(x.criado_em)}</div><div>{x.origem === "site" ? "pelo site" : "pela compra"}</div></td>
                     <td><Cupom x={x} /></td>
                     <td className="dir num">{x.compras ? <><div className="forte">{x.compras}</div><div className="fraco">{moeda(x.gasto)}</div></> : <span className="fraco">—</span>}</td>
@@ -134,7 +142,7 @@ export default function Clientes() {
                   <div style={{ minWidth: 0 }}>
                     <div className="t">{x.nome}</div>
                     <div className="s" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{x.email}</div>
-                    <div className="s">{foneBonito(x.whatsapp)} · {x.origem === "site" ? "pelo site" : "pela compra"}</div>
+                    <div className="s">{foneBonito(x.whatsapp)} · {x.origem === "site" ? "pelo site" : "pela compra"}{aniv(x) ? ` · 🎂 ${aniv(x)}` : ""}</div>
                   </div>
                   <div style={{ textAlign: "right" }}>
                     <div className="v">{x.compras ? `${x.compras} compra${x.compras > 1 ? "s" : ""}` : "Sem compras"}</div>

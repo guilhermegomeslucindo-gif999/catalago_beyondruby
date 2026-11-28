@@ -5,13 +5,15 @@ import { useEffect, useState } from "react";
 import { moeda } from "@/lib/formato";
 import { usePainel } from "./Acesso";
 import { dataCurta, NOME_STATUS_CURTO } from "./comum";
-import { IAlerta, ICaixa, IDinheiro, IPedidos, ISacola, ITicket } from "./icones";
+import { IAlerta, ICaixa, ICoracao, IDinheiro, IPedidos, ISacola, ITicket } from "./icones";
 
 type Rel = {
   faturamento: number; pedidos: number; ticket_medio: number; pecas_vendidas: number; aguardando: number;
   por_dia: { dia: string; total: number; qtd: number }[];
   mais_vendidas: { produto_id: string; nome: string; qtd: number; total: number }[];
   mais_sacola: { produto_id: string; nome: string; qtd: number }[];
+  mais_favoritadas?: { produto_id: string; nome: string; qtd: number }[];
+  favoritas_total?: number;
 };
 type Recente = { id: string; numero: number; cliente_nome: string; total: number; status: string; criado_em: string };
 
@@ -132,6 +134,8 @@ export default function Resumo() {
               itens={r.mais_vendidas.map((x) => ({ id: x.produto_id, nome: x.nome, qtd: Number(x.qtd), extra: moeda(x.total) }))} />
             <Ranking titulo="Mais adicionadas à sacola" sub="Interesse das clientes no período" fotos={fotos} Ic={ISacola} vazio="Ninguém adicionou peças à sacola no período."
               itens={r.mais_sacola.map((x) => ({ id: x.produto_id, nome: x.nome, qtd: Number(x.qtd), extra: "adições" }))} />
+            <Ranking titulo="Mais favoritadas" sub={`Corações marcados no período${r.favoritas_total ? ` · ${r.favoritas_total} no total` : ""}`} fotos={fotos} Ic={ICoracao} vazio="Ninguém favoritou peças no período."
+              itens={(r.mais_favoritadas || []).map((x) => ({ id: x.produto_id, nome: x.nome, qtd: Number(x.qtd), extra: "favoritas" }))} />
           </div>
 
           <section className="pn-cartao">

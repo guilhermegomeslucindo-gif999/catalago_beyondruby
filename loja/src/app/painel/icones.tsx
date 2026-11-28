@@ -27,3 +27,6 @@ export const IOlho = (p: P) => <svg {...b(p)}><path d="M2.5 12S6 5.5 12 5.5 21.5
 export const IClientes = (p: P) => <svg {...b(p)}><circle cx="9" cy="8" r="3.2" /><path d="M3 19.5c.6-3.3 3-5.2 6-5.2s5.4 1.9 6 5.2" /><path d="M15.5 4.9a3.2 3.2 0 0 1 0 6.2M17.5 14.6c2 .6 3.2 2.3 3.5 4.9" /></svg>;
 export const IBaixar = (p: P) => <svg {...b(p)}><path d="M12 4v11M7 10l5 5 5-5M4 19h16" /></svg>;
 export const ICoracao = (p: P) => <svg {...b(p)}><path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10Z" /></svg>;
+export const IEstrela = (p: P) => <svg {...b(p)}><path d="m12 3.2 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.2l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3.2Z" /></svg>;
+export const IPresente = (p: P) => <svg {...b(p)}><rect x="3.5" y="8.5" width="17" height="4" rx="1" /><path d="M5 12.5v8h14v-8M12 8.5v12M12 8.5S10.5 4 8 4.3C6 4.6 6.3 8.5 12 8.5ZM12 8.5S13.5 4 16 4.3c2 .3 1.7 4.2-4 4.2Z" /></svg>;
+export const IVideo = (p: P) => <svg {...b(p)}><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3" /></svg>;

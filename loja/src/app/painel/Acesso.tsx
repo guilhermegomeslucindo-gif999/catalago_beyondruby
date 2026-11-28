@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import { Coroa, Logo } from "@/components/Icones";
 import { supabaseNavegador } from "@/lib/supabase";
-import { IClientes, IConfig, ILoja, IPecas, IPedidos, IResumo } from "./icones";
+import { IClientes, IConfig, IEstrela, ILoja, IPecas, IPedidos, IResumo } from "./icones";
 import "./painel.css";
 
 type Ctx = { db: SupabaseClient; sessao: Session; atualizarSite: () => Promise<void>; atualizarContadores: () => void };
@@ -28,6 +28,7 @@ export function Acesso({ children }: { children: ReactNode }) {
   const [estado, setEstado] = useState<Estado>("carregando");
   const [sessao, setSessao] = useState<Session | null>(null);
   const [aEnviar, setAEnviar] = useState(0);
+  const [avNovas, setAvNovas] = useState(0);
   const caminho = usePathname();
 
   const verificar = useCallback(async (s: Session | null) => {
@@ -51,6 +52,7 @@ export function Acesso({ children }: { children: ReactNode }) {
   // quantos pedidos pagos ainda não foram enviados (aparece no menu)
   const atualizarContadores = useCallback(() => {
     db.from("pedidos").select("id", { count: "exact", head: true }).eq("status", "pago").then(({ count }) => setAEnviar(count || 0));
+    db.from("avaliacoes").select("id", { count: "exact", head: true }).eq("status", "nova").then(({ count }) => setAvNovas(count || 0));
   }, [db]);
   useEffect(() => {
     if (estado !== "ok") return;
@@ -83,6 +85,7 @@ export function Acesso({ children }: { children: ReactNode }) {
     { href: "/painel", nome: "Resumo", Ic: IResumo },
     { href: "/painel/pedidos", nome: "Pedidos", Ic: IPedidos, bolha: aEnviar },
     { href: "/painel/pecas", nome: "Peças", Ic: IPecas },
+    { href: "/painel/avaliacoes", nome: "Avaliações", Ic: IEstrela, bolha: avNovas },
     { href: "/painel/clientes", nome: "Clientes", Ic: IClientes },
     { href: "/painel/configuracoes", nome: "Ajustes", Ic: IConfig },
   ];
@@ -97,7 +100,7 @@ export function Acesso({ children }: { children: ReactNode }) {
           <nav className="pn-menu">
             {nav.map(({ href, nome, Ic, bolha }) => (
               <Link key={href} href={href} aria-current={ativo(href) ? "page" : undefined}>
-                <Ic />{nome === "Ajustes" ? "Configurações" : nome}{!!bolha && <span className="bolha" title="Pedidos pagos a enviar">{bolha}</span>}
+                <Ic />{nome === "Ajustes" ? "Configurações" : nome}{!!bolha && <span className="bolha" title={href.includes("avaliacoes") ? "Avaliações novas para analisar" : "Pedidos pagos a enviar"}>{bolha}</span>}
               </Link>
             ))}
             <div className="pn-menu-rotulo">Loja</div>

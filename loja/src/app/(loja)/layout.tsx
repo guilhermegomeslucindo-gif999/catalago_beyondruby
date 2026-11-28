@@ -1,5 +1,6 @@
 import { Cabecalho, FaixaAvisos } from "@/components/Cabecalho";
-import { JanelaClube } from "@/components/Clube";
+import { FlutuaClube, JanelaClube } from "@/components/Clube";
+import { Aviso } from "@/components/Favoritos";
 import { FlutuaZap } from "@/components/FlutuaZap";
 import { Rodape } from "@/components/Rodape";
 import { SacolaProvider } from "@/components/Sacola";
@@ -15,7 +16,9 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
       <Cabecalho categorias={categorias.map((c) => ({ slug: c.slug, nome: c.nome }))} whatsapp={loja.whatsapp} instagram={loja.instagram} />
       <main>{children}</main>
       <Rodape loja={loja} categorias={categorias} clube={clube} />
+      <FlutuaClube cfg={clube} />
       <FlutuaZap whatsapp={loja.whatsapp} />
+      <Aviso />
       <JanelaClube cfg={clube} imagem={home.destaques?.[0]?.imagem || home.hero} />
     </SacolaProvider>
   );

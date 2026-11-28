@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { apagarCupom, lerCupom } from "@/components/Clube";
+import { apagarCupom, lerCupom, SeletorAniversario } from "@/components/Clube";
 import { IcCadeado } from "@/components/Icones";
 import { LinhaItem, ProgressoFrete, useSacola } from "@/components/Sacola";
 import { moeda } from "@/lib/formato";
@@ -24,7 +24,7 @@ const mascaraFone = (v: string) => {
 type Form = { nome: string; email: string; whatsapp: string; cep: string; rua: string; numero: string; complemento: string; bairro: string; cidade: string; uf: string; observacao: string };
 const VAZIO: Form = { nome: "", email: "", whatsapp: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "", observacao: "" };
 
-export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { responsavel: string; cnpj: string; whatsapp: string }; clube: ConfigClube }) {
+export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { responsavel: string; cnpj: string; whatsapp: string; bilhete_valor?: number }; clube: ConfigClube }) {
   const { itens, total, pronta, substituir } = useSacola();
   const [f, setF] = useState<Form>(VAZIO);
   const [tipo, setTipo] = useState<TipoEntrega | "">("");
@@ -39,6 +39,13 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
   const [novidades, setNovidades] = useState(false);
   const [saldo, setSaldo] = useState<{ saldo: number; vence_em: string | null } | null>(null);
   const [usarCredito, setUsarCredito] = useState(true);
+  const [anivDia, setAnivDia] = useState("");
+  const [anivMes, setAnivMes] = useState("");
+  // presente e bilhete
+  const [presente, setPresente] = useState(false);
+  const [querBilhete, setQuerBilhete] = useState(false);
+  const [bilhete, setBilhete] = useState("");
+  const precoBilhete = Math.max(0, Number(loja.bilhete_valor ?? 1));
   useEffect(() => { const c = lerCupom(); if (c) setCupom(c); }, []);
 
   // lembra os dados da cliente neste aparelho
@@ -107,7 +114,8 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
   const cupomValido = !!cupomLimpo && clube.ativo && total >= clube.minimo;
   const desconto = cupomValido ? Math.min(clube.valor, total) : 0;
   const credito = saldo && usarCredito ? Math.max(0, Math.min(saldo.saldo, total - desconto - 1)) : 0;
-  const totalGeral = total - desconto - credito + (valorFrete ?? 0);
+  const valorBilhete = presente && querBilhete && bilhete.trim() ? precoBilhete : 0;
+  const totalGeral = total - desconto - credito + (valorFrete ?? 0) + valorBilhete;
   const cashbackPrevisto = clube.ativo && !cupomValido ? Math.round((total - credito) * clube.cashback_pct) / 100 : 0;
 
   async function pagar(e: React.FormEvent) {
@@ -116,6 +124,7 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
     if (!tipo) return setErro("Escolha a forma de entrega.");
     if (tipo === "uber" && !regiao) return setErro("Escolha a sua região para a entrega via Uber.");
     if (precisaEndereco && cepDig.length !== 8) return setErro("Informe o CEP de entrega.");
+    if (presente && querBilhete && !bilhete.trim()) return setErro("Escreva a mensagem do bilhete ou desmarque a opção de bilhete.");
     setEnviando(true);
     try {
       try { const { observacao: _o, ...guardar } = f; localStorage.setItem("br-cliente", JSON.stringify(guardar)); } catch {}
@@ -124,7 +133,9 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
         headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY },
         body: JSON.stringify({
           itens: itens.map((i) => ({ produto_id: i.id, quantidade: i.qtd })),
-          cliente: { nome: f.nome, email: f.email, whatsapp: f.whatsapp, aceita_novidades: novidades },
+          cliente: { nome: f.nome, email: f.email, whatsapp: f.whatsapp, aceita_novidades: novidades,
+            aniversario_dia: novidades && anivDia && anivMes ? Number(anivDia) : null, aniversario_mes: novidades && anivDia && anivMes ? Number(anivMes) : null },
+          presente, bilhete: presente && querBilhete ? bilhete.trim() : "",
           cupom: cupomValido ? cupomLimpo : "",
           usar_credito: credito > 0,
           entrega: { tipo, regiao, cep: f.cep, endereco: { rua: f.rua, numero: f.numero, complemento: f.complemento, bairro: f.bairro, cidade: f.cidade, uf: f.uf } },
@@ -167,6 +178,12 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
                 <div className="campo"><label htmlFor="whats">WhatsApp</label><input id="whats" type="tel" required autoComplete="tel-national" inputMode="tel" placeholder="(31) 99999-9999" value={f.whatsapp} onChange={set("whatsapp")} /></div>
               </div>
               <label className="aceite-novidades"><input type="checkbox" checked={novidades} onChange={(e) => setNovidades(e.target.checked)} />Quero receber novidades e ofertas da Beyond Ruby por e-mail</label>
+              {novidades && (
+                <div className="campo aniv-fin">
+                  <label htmlFor="fin-dia">Aniversário <small>(opcional)</small></label>
+                  <SeletorAniversario dia={anivDia} mes={anivMes} setDia={setAnivDia} setMes={setAnivMes} idDia="fin-dia" />
+                </div>
+              )}
             </div>
           </section>
 
@@ -217,8 +234,32 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
           </section>
 
           <section className="bloco">
-            <h2><span>3</span>Observação <small style={{ fontFamily: "var(--f-texto)", fontSize: 12, letterSpacing: 0, color: "var(--suave)" }}>(opcional)</small></h2>
-            <div className="campo"><label htmlFor="obs" className="sr">Observação</label><textarea id="obs" rows={2} maxLength={500} placeholder="É presente? Precisa de algo especial? Conta pra gente." value={f.observacao} onChange={set("observacao")} /></div>
+            <h2><span>3</span>É para presente?</h2>
+            <div className="presente-opcoes" role="radiogroup" aria-label="É para presente?">
+              <label className={`presente-op${!presente ? " on" : ""}`}><input type="radio" name="presente" checked={!presente} onChange={() => setPresente(false)} /><span><b>Não</b><small>É para mim</small></span></label>
+              <label className={`presente-op${presente ? " on" : ""}`}><input type="radio" name="presente" checked={presente} onChange={() => setPresente(true)} /><span><b>Sim</b><small>Vai sem preço na embalagem</small></span></label>
+            </div>
+            {presente && (
+              <div className="presente-extra">
+                <label className={`bilhete-op${querBilhete ? " on" : ""}`}>
+                  <input type="checkbox" checked={querBilhete} onChange={(e) => setQuerBilhete(e.target.checked)} />
+                  <span><b>Quero um bilhete personalizado</b><small>Escrevemos a sua mensagem num cartão que vai junto com a peça</small></span>
+                  <span className="bilhete-preco">+ {moeda(precoBilhete)}</span>
+                </label>
+                {querBilhete && (
+                  <div className="campo bilhete-campo">
+                    <label htmlFor="bilhete">Mensagem do bilhete</label>
+                    <textarea id="bilhete" rows={3} maxLength={200} placeholder="Ex.: Feliz aniversário, mãe! Com todo o meu amor. — Ana" value={bilhete} onChange={(e) => setBilhete(e.target.value)} />
+                    <span className="dica-campo bilhete-conta">{bilhete.length}/200</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section className="bloco">
+            <h2><span>4</span>Observação <small style={{ fontFamily: "var(--f-texto)", fontSize: 12, letterSpacing: 0, color: "var(--suave)" }}>(opcional)</small></h2>
+            <div className="campo"><label htmlFor="obs" className="sr">Observação</label><textarea id="obs" rows={2} maxLength={500} placeholder="Precisa de algo especial? Conta pra gente." value={f.observacao} onChange={set("observacao")} /></div>
           </section>
         </div>
 
@@ -256,6 +297,7 @@ export function Finalizar({ frete, loja, clube }: { frete: ConfigFrete; loja: { 
             <div className="linha-total" style={{ fontSize: 14 }}><span>Subtotal</span><span>{moeda(total)}</span></div>
             {desconto > 0 && <div className="linha-total desconto" style={{ fontSize: 14 }}><span>Cupom do Clube</span><span>− {moeda(desconto)}</span></div>}
             {credito > 0 && <div className="linha-total desconto" style={{ fontSize: 14 }}><span>Crédito do Clube</span><span>− {moeda(credito)}</span></div>}
+            {valorBilhete > 0 && <div className="linha-total" style={{ fontSize: 14 }}><span>Bilhete personalizado</span><span>{moeda(valorBilhete)}</span></div>}
             <div className="linha-total" style={{ fontSize: 14 }}><span>Frete</span><span>{!tipo ? "—" : valorFrete === null ? "—" : valorFrete === 0 ? "Grátis" : moeda(valorFrete)}</span></div>
             <div className="linha-total" style={{ borderTop: "1px solid var(--linha)", paddingTop: 10 }}><span>Total</span><b>{moeda(totalGeral)}</b></div>
             {cashbackPrevisto > 0 && <p className="cashback-aviso">Você vai ganhar <b>{moeda(cashbackPrevisto)}</b> de crédito do Clube nesta compra, liberado quando o pedido for entregue.</p>}

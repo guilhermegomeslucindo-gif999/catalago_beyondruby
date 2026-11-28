@@ -1,16 +1,20 @@
 import Link from "next/link";
+import { AvaliacoesHome } from "@/components/Avaliacoes";
 import { CardPeca } from "@/components/CardPeca";
+import { CompreLook } from "@/components/CompreLook";
+import { FaixaCorrida } from "@/components/FaixaCorrida";
+import { VistasRecentes } from "@/components/Vistas";
 import { Dicas } from "@/components/Dicas";
 import { IcCaminhao, IcCartao, IcEscudo, IcTroca } from "@/components/Icones";
-import { getCategorias, getConfigs, getMaisVendidas, getProdutos } from "@/lib/dados";
+import { getAvaliacoes, getCategorias, getConfigs, getMaisVendidas, getProdutos } from "@/lib/dados";
 import { moeda } from "@/lib/formato";
 import type { Destaque } from "@/lib/tipos";
 
 export const revalidate = 60;
 
 export default async function Inicio() {
-  const [produtos, categorias, { loja, home, frete }, vendidasIds] = await Promise.all([
-    getProdutos(), getCategorias(), getConfigs(), getMaisVendidas(),
+  const [produtos, categorias, { loja, home, frete }, vendidasIds, avaliacoes] = await Promise.all([
+    getProdutos(), getCategorias(), getConfigs(), getMaisVendidas(), getAvaliacoes(undefined, 12),
   ]);
   const ativos = produtos.filter((p) => p.status === "ativo");
 
@@ -56,7 +60,12 @@ export default async function Inicio() {
         </div>
       </section>
 
-      {d1 && <FaixaDestaque d={d1} />}
+      <FaixaCorrida itens={loja.avisos || []} />
+
+      {home.look?.ativo && home.look.pontos?.length ? (
+        <CompreLook look={home.look} produtos={produtos} titulo={d1?.titulo || "Compre o look"} texto={d1?.texto || "Toque nos números para ver cada peça"}
+          link={d1?.link} botao={d1?.botao} whatsapp={loja.whatsapp} freteMinimo={frete.frete_gratis_minimo} />
+      ) : d1 && <FaixaDestaque d={d1} />}
 
       <section className="secao">
         <div className="cont">
@@ -69,6 +78,10 @@ export default async function Inicio() {
       </section>
 
       {d2 && <FaixaDestaque d={d2} />}
+
+      <AvaliacoesHome r={avaliacoes} />
+
+      <VistasRecentes produtos={produtos} whatsapp={loja.whatsapp} creme />
 
       <section className="secao creme" style={{ paddingTop: 44, paddingBottom: 44 }}>
         <div className="cont vantagens">

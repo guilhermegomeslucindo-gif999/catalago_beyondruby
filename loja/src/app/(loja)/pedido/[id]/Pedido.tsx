@@ -14,6 +14,7 @@ type Dados = {
   subtotal: number; frete: number; total: number; pagar_url: string | null; comprovante: string | null;
   cupom: string | null; desconto: number; credito_usado: number;
   cashback: { valor: number; status: string; expira_em: string | null } | null;
+  presente?: boolean; bilhete?: string | null; bilhete_valor?: number;
   itens: { nome: string; preco: number; quantidade: number }[];
 };
 
@@ -93,9 +94,17 @@ export function Pedido({ id, whatsapp }: { id: string; whatsapp: string }) {
         ))}
         {Number(d.desconto) > 0 && <div className="linha-total desconto" style={{ padding: "6px 0" }}><span>Cupom do Clube{d.cupom ? ` (${d.cupom})` : ""}</span><span>− {moeda(d.desconto)}</span></div>}
         {Number(d.credito_usado) > 0 && <div className="linha-total desconto" style={{ padding: "6px 0" }}><span>Crédito do Clube</span><span>− {moeda(d.credito_usado)}</span></div>}
+        {Number(d.bilhete_valor) > 0 && <div className="linha-total" style={{ padding: "6px 0" }}><span>Bilhete personalizado</span><span>{moeda(d.bilhete_valor!)}</span></div>}
         <div className="linha-total" style={{ padding: "6px 0", borderTop: "1px solid var(--linha)", marginTop: 6 }}><span>{ENTREGA[d.entrega_tipo] || "Entrega"}{d.entrega_regiao && d.entrega_tipo === "uber" ? ` · ${d.entrega_regiao}` : ""}</span><span>{Number(d.frete) ? moeda(d.frete) : "Grátis"}</span></div>
         <div className="linha-total" style={{ paddingTop: 8 }}><span>Total</span><b>{moeda(d.total)}</b></div>
       </section>
+
+      {d.presente && (
+        <div className="pedido-presente">
+          <span aria-hidden>🎁</span>
+          <div><b>É para presente</b>{d.bilhete ? <p>Bilhete: “{d.bilhete}”</p> : <p>Vai sem preço na embalagem.</p>}</div>
+        </div>
+      )}
 
       {d.cashback && d.status !== "cancelado" && (
         <p className="cashback-aviso" style={{ marginTop: 14, fontSize: 13.5 }}>

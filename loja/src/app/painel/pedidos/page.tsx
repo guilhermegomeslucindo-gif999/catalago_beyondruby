@@ -6,7 +6,7 @@ import { FUNCOES, SUPABASE_KEY } from "@/lib/config";
 import { foneBonito, linkWhats, moeda } from "@/lib/formato";
 import { usePainel } from "../Acesso";
 import { dataCurta, NOME_ENTREGA, NOME_STATUS_CURTO, NOME_STATUS_PEDIDO } from "../comum";
-import { IBusca, IFechar, IPedidos, IZap } from "../icones";
+import { IBusca, IEstrela, IFechar, IPedidos, IPresente, IZap } from "../icones";
 
 type Item = { nome: string; preco: number; quantidade: number };
 type PedidoAdm = {
@@ -15,6 +15,7 @@ type PedidoAdm = {
   entrega_tipo: string; entrega_regiao: string | null; endereco: Record<string, string> | null;
   subtotal: number; frete: number; total: number; observacao: string | null; rastreio: string | null;
   cupom: string | null; desconto: number; credito_usado: number;
+  presente: boolean; bilhete: string | null; bilhete_valor: number;
   ip_capture_method: string | null; ip_parcelas: number | null; ip_receipt_url: string | null; ip_valor_pago: number | null;
   pedido_itens: Item[];
 };
@@ -85,7 +86,7 @@ function Pedidos() {
               <tbody>
                 {vis.map((p) => (
                   <tr key={p.id} onClick={() => setAberto(p.id)} className={aberto === p.id ? "sel" : ""}>
-                    <td className="forte">#{p.numero}</td>
+                    <td className="forte">#{p.numero}{p.presente && <span className="pn-selo-presente" title="Para presente"><IPresente /></span>}</td>
                     <td className="fraco num">{dataCurta(p.criado_em)}</td>
                     <td><div className="forte">{p.cliente_nome}</div><div className="fraco">{foneBonito(p.cliente_whatsapp)}</div></td>
                     <td>{NOME_ENTREGA[p.entrega_tipo]}</td>
@@ -153,6 +154,9 @@ function Detalhe({ p, onFechar, onMudou }: { p: PedidoAdm; onFechar: () => void;
     : `Oi, ${primeiro}! Aqui é da Beyond Ruby, sobre o seu pedido nº ${p.numero}.`;
   const correios = p.entrega_tipo === "pac" || p.entrega_tipo === "sedex";
   const pagamento = p.ip_capture_method === "pix" ? "Pix" : p.ip_capture_method === "credit_card" ? `Cartão de crédito${p.ip_parcelas && p.ip_parcelas > 1 ? ` em ${p.ip_parcelas}x` : " à vista"}` : (p.ip_capture_method || "Confirmado");
+  const linkAvaliar = typeof window !== "undefined" ? `${window.location.origin}/avaliar/${p.token}` : "";
+  const msgAvaliar = `Oi, ${primeiro}! Aqui é da Beyond Ruby 💕 Esperamos que você esteja amando sua peça! Pode contar pra gente o que achou? Leva menos de 1 minuto e, se quiser, dá pra mandar uma foto ou vídeo usando:\n\n${linkAvaliar}\n\nSua opinião ajuda muito outras clientes. Obrigada!`;
+  const podeAvaliar = ["pago", "enviado", "entregue"].includes(p.status);
   const etapas = [
     { nome: "Pedido criado", data: p.criado_em, feito: true },
     { nome: "Pagamento confirmado", data: p.pago_em, feito: !!p.pago_em || ["pago", "enviado", "entregue"].includes(p.status) },
@@ -189,7 +193,25 @@ function Detalhe({ p, onFechar, onMudou }: { p: PedidoAdm; onFechar: () => void;
               {(p.status === "pago" || p.status === "enviado") && <button className="pn-bt" disabled={ocupado} onClick={() => mudar("entregue")}>Marcar {p.entrega_tipo === "retirada" ? "retirado" : "entregue"}</button>}
               <a className="pn-bt" href={linkWhats(zap, msgZap)} target="_blank" rel="noopener"><IZap />WhatsApp</a>
             </div>
+            {podeAvaliar && (
+              <div className="pn-pedir-av">
+                <div><b>Avaliação da cliente</b><span>{p.status === "entregue" ? "Envie o link para ela avaliar as peças." : "O ideal é enviar depois que ela receber."}</span></div>
+                <div className="pn-acoes">
+                  <a className={`pn-bt${p.status === "entregue" ? " primario" : ""}`} href={linkWhats(zap, msgAvaliar)} target="_blank" rel="noopener"><IEstrela />Pedir avaliação</a>
+                  <button className="pn-bt fantasma" onClick={() => { navigator.clipboard?.writeText(linkAvaliar).then(() => setMsg({ t: "ok", m: "Link de avaliação copiado." })).catch(() => {}); }}>Copiar link</button>
+                </div>
+              </div>
+            )}
           </section>
+        )}
+
+        {p.presente && (
+          <div className="pn-presente">
+            <IPresente />
+            <div><b>Para presente</b> · enviar sem preço na embalagem
+              {p.bilhete ? <><div style={{ fontSize: 12.5, color: "var(--pn-suave)", marginTop: 6 }}>Bilhete personalizado (escrever no cartão):</div><div className="bilhete">“{p.bilhete}”</div></> : <div style={{ fontSize: 12.5, color: "var(--pn-suave)" }}>Sem bilhete.</div>}
+            </div>
+          </div>
         )}
 
         <section className="pn-cartao">
@@ -200,6 +222,7 @@ function Detalhe({ p, onFechar, onMudou }: { p: PedidoAdm; onFechar: () => void;
               <div><span className="rot">Subtotal</span><span>{moeda(p.subtotal)}</span></div>
               {Number(p.desconto) > 0 && <div><span className="rot">Cupom do Clube ({p.cupom})</span><span style={{ color: "var(--pn-ok)" }}>− {moeda(p.desconto)}</span></div>}
               {Number(p.credito_usado) > 0 && <div><span className="rot">Crédito do Clube</span><span style={{ color: "var(--pn-ok)" }}>− {moeda(p.credito_usado)}</span></div>}
+              {Number(p.bilhete_valor) > 0 && <div><span className="rot">Bilhete personalizado</span><span>{moeda(p.bilhete_valor)}</span></div>}
               <div><span className="rot">Frete · {NOME_ENTREGA[p.entrega_tipo]}{p.entrega_regiao && p.entrega_tipo === "uber" ? ` (${p.entrega_regiao})` : ""}</span><span>{Number(p.frete) ? moeda(p.frete) : "Grátis"}</span></div>
               <div className="total"><span>Total</span><span>{moeda(p.total)}</span></div>
             </div>

@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AcoesPeca } from "@/components/AcoesPeca";
+import { AvaliacoesPeca, NotaPeca } from "@/components/Avaliacoes";
+import { BotaoFavorito, RegistrarVista } from "@/components/Favoritos";
+import { GuiaTamanhos } from "@/components/GuiaTamanhos";
+import { VistasRecentes } from "@/components/Vistas";
 import { CardPeca, mensagemAviseMe } from "@/components/CardPeca";
 import { Galeria } from "@/components/Galeria";
 import { IcCaminhao, IcCadeado, IcEscudo, IcPix, IcZap } from "@/components/Icones";
-import { getCategorias, getConfigs, getProduto, getProdutos } from "@/lib/dados";
+import { getAvaliacoes, getCategorias, getConfigs, getProduto, getProdutos } from "@/lib/dados";
 import { linkWhats, moeda, separarNome } from "@/lib/formato";
 
 export const revalidate = 60;
@@ -29,6 +33,9 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
   const { slug } = await params;
   const [p, todos, categorias, { loja, frete }] = await Promise.all([getProduto(slug), getProdutos(), getCategorias(), getConfigs()]);
   if (!p) notFound();
+  const avaliacoes = await getAvaliacoes(p.id, 50);
+  const tamanho = p.detalhes.find((d) => /tamanho|comprimento/i.test(d.rotulo))?.valor;
+  const tipoGuia = p.categoria === "aneis" ? "anel" : p.categoria === "colares" ? "colar" : null;
   const cat = categorias.find((c) => c.slug === p.categoria);
   const esg = p.status === "esgotado";
   const { titulo, variante } = separarNome(p.nome);
@@ -41,6 +48,7 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
     description: p.descricao || undefined, brand: { "@type": "Brand", name: "Beyond Ruby" }, sku: p.slug,
     offers: { "@type": "Offer", priceCurrency: "BRL", price: p.preco.toFixed(2),
       availability: esg ? "https://schema.org/OutOfStock" : "https://schema.org/InStock" },
+    ...(avaliacoes.total ? { aggregateRating: { "@type": "AggregateRating", ratingValue: avaliacoes.media, reviewCount: avaliacoes.total } } : {}),
   };
 
   return (
@@ -53,8 +61,13 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
         <div className="peca">
           <Galeria imagens={p.produto_imagens} nome={p.nome} esgotado={esg} />
           <div className="peca-info">
-            <span className="tom"><i className={`sw-${p.tom}`} />{variante || p.tom}</span>
+            <RegistrarVista id={p.id} />
+            <div className="peca-topo">
+              <span className="tom"><i className={`sw-${p.tom}`} />{variante || p.tom}</span>
+              <BotaoFavorito id={p.id} nome={titulo} variante="peca" />
+            </div>
             <h1>{titulo}</h1>
+            <NotaPeca r={avaliacoes} />
             <div className="peca-preco" style={esg ? { color: "var(--suave)" } : undefined}>{moeda(p.preco)}</div>
             {!esg && (
               <>
@@ -62,6 +75,8 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
                 <div className="peca-pix"><IcPix style={{ width: 16, height: 16 }} /> Pagamento seguro pela InfinitePay</div>
               </>
             )}
+
+            {tipoGuia && <GuiaTamanhos tipo={tipoGuia} tamanho={tamanho} />}
 
             {esg ? (
               <>
@@ -122,6 +137,8 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
         </div>
       </div>
 
+      <AvaliacoesPeca r={avaliacoes} />
+
       {combina.length > 0 && (
         <section className="secao creme">
           <div className="cont">
@@ -130,6 +147,7 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
           </div>
         </section>
       )}
+      <VistasRecentes produtos={todos} whatsapp={loja.whatsapp} excluir={p.id} />
     </>
   );
 }

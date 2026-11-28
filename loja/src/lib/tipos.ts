@@ -43,9 +43,17 @@ export type ConfigLoja = {
   cidade: string;
   avisos: string[];
   infinitepay_handle?: string;
+  bilhete_valor?: number;
 };
 
 export type Destaque = { imagem: string; titulo: string; texto: string; link: string; botao: string };
-export type ConfigHome = { hero: string; titulo: string; subtitulo: string; destaques: Destaque[] };
+// "Compre o look": x/y = ponto no anel; lx/ly = onde fica o número (em % da foto)
+export type PontoLook = { produto_id: string; x: number; y: number; lx: number; ly: number };
+export type ConfigLook = { ativo: boolean; imagem: string; pontos: PontoLook[] };
+export type ConfigHome = { hero: string; titulo: string; subtitulo: string; destaques: Destaque[]; look?: ConfigLook };
+
+export type Midia = { url: string; tipo: "foto" | "video" };
+export type Avaliacao = { id: string; nota: number; texto: string | null; midia: Midia[]; autor: string; cidade: string | null; criado_em: string; slug: string; produto: string; imagem: string | null };
+export type ResumoAvaliacoes = { media: number | null; total: number; lista: Avaliacao[] };
 
 export type ConfigClube = { ativo: boolean; valor: number; minimo: number; cashback_pct: number; validade_dias: number; atraso_segundos: number };

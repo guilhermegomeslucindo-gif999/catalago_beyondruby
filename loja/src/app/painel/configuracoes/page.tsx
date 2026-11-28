@@ -5,6 +5,7 @@ import type { ConfigClube, ConfigFrete, ConfigHome, ConfigLoja, RegiaoUber } fro
 import { slugify } from "@/lib/formato";
 import { usePainel } from "../Acesso";
 import { ILixo, IMais, IUpload } from "../icones";
+import { EditorLook } from "./EditorLook";
 
 const num = (v: string) => Number(String(v).replace(",", ".")) || 0;
 const ZONAS = [["MG", "Minas Gerais"], ["SUDESTE_SUL", "Sudeste e Sul"], ["OUTRAS", "Demais regiões"]] as const;
@@ -50,13 +51,14 @@ export default function Configuracoes() {
     setSalvando(true);
     const regioes = frete!.uber.regioes.filter((r) => r.nome.trim()).map((r) => ({ ...r, id: r.id || slugify(r.nome).slice(0, 30), valor: num(String(r.valor)) }));
     const linhas = [
-      { chave: "loja", valor: { ...loja!, whatsapp: zap, instagram: loja!.instagram.replace(/^@/, "").trim(), avisos: loja!.avisos.map((a) => a.trim()).filter(Boolean) } },
+      { chave: "loja", valor: { ...loja!, bilhete_valor: num(String(loja!.bilhete_valor ?? 1)), whatsapp: zap, instagram: loja!.instagram.replace(/^@/, "").trim(), avisos: loja!.avisos.map((a) => a.trim()).filter(Boolean) } },
       { chave: "frete", valor: { ...frete!, frete_gratis_minimo: num(String(frete!.frete_gratis_minimo)), uber: { ...frete!.uber, regioes },
         correios: { ...frete!.correios, tabela: Object.fromEntries(ZONAS.map(([z]) => [z, { pac: num(String(frete!.correios.tabela[z].pac)), sedex: num(String(frete!.correios.tabela[z].sedex)) }])) } } },
       { chave: "home", valor: home },
       { chave: "clube", valor: { ...clube!, valor: num(String(clube!.valor)), minimo: num(String(clube!.minimo)), cashback_pct: num(String(clube!.cashback_pct)),
         validade_dias: Math.max(1, Math.round(num(String(clube!.validade_dias)))), atraso_segundos: Math.max(3, Math.round(num(String(clube!.atraso_segundos)))) } },
     ];
+    if (home!.look?.pontos.some((p) => !p.produto_id)) { setSalvando(false); return setMsg({ t: "erro", m: "No Compre o look, escolha a peça de cada número (ou remova o número vazio)." }); }
     const { error } = await db.from("configuracoes").upsert(linhas);
     setSalvando(false);
     if (error) return setMsg({ t: "erro", m: "Não foi possível salvar." });
@@ -85,7 +87,7 @@ export default function Configuracoes() {
       <div className="pn-cab"><div><h1>Configurações</h1><p>Contato, frete, avisos e página inicial da loja</p></div></div>
       {msg && <p className={`pn-msg ${msg.t}`}>{msg.m}</p>}
 
-      <Secao titulo="Faixa de avisos" texto="Mensagens que passam no topo do site, uma de cada vez.">
+      <Secao titulo="Faixa de avisos" texto="Mensagens do topo do site (uma de cada vez) e da faixa que corre na página inicial.">
         {loja.avisos.map((a, i) => (
           <div key={i} style={{ display: "flex", gap: 8 }} className="pn-campo">
             <input value={a} onChange={(e) => setL("avisos", loja.avisos.map((x, k) => (k === i ? e.target.value : x)))} aria-label={`Aviso ${i + 1}`} />
@@ -104,6 +106,10 @@ export default function Configuracoes() {
           <div className="pn-campo"><label htmlFor="cd">Validade do crédito</label><div className="pn-prefixo"><span>dias</span><input id="cd" inputMode="numeric" value={String(clube.validade_dias)} onChange={(e) => setC({ validade_dias: e.target.value as unknown as number })} /></div><span className="ajuda">Contada a partir da entrega do pedido.</span></div>
           <div className="pn-campo"><label htmlFor="ca">Janela aparece depois de</label><div className="pn-prefixo"><span>seg.</span><input id="ca" inputMode="numeric" value={String(clube.atraso_segundos)} onChange={(e) => setC({ atraso_segundos: e.target.value as unknown as number })} /></div></div>
         </div>
+      </Secao>
+
+      <Secao titulo="Presente" texto="Na finalização a cliente diz se é para presente. Se quiser, paga um valor a mais pelo bilhete personalizado.">
+        <div className="pn-campo" style={{ maxWidth: 240 }}><label htmlFor="bv">Valor do bilhete personalizado</label><div className="pn-prefixo"><span>R$</span><input id="bv" inputMode="decimal" value={String(loja.bilhete_valor ?? 1)} onChange={(e) => setL("bilhete_valor", e.target.value as unknown as number)} /></div></div>
       </Secao>
 
       <Secao titulo="Contato" texto="Usados nos botões de WhatsApp, no menu e no rodapé.">
@@ -201,6 +207,17 @@ export default function Configuracoes() {
             </div>
           );
         })}
+      </Secao>
+
+      <Secao titulo="Compre o look" texto="Substitui a faixa 1 na página inicial (usa o título, a frase e o botão dela). Cada número aponta para uma peça da foto.">
+        {home.look ? (
+          <>
+            {ativo("Mostrar o Compre o look", home.look.ativo, (v) => setH({ ...home, look: { ...home.look!, ativo: v } }))}
+            <EditorLook look={home.look} onChange={(l) => setH({ ...home, look: l })} onMsg={(m, e) => setMsg({ t: e ? "erro" : "info", m })} />
+          </>
+        ) : (
+          <button className="pn-bt" style={{ justifySelf: "start" }} onClick={() => setH({ ...home, look: { ativo: true, imagem: home.destaques?.[0]?.imagem || home.hero, pontos: [] } })}><IMais />Criar Compre o look</button>
+        )}
       </Secao>
 
       <MinhaSenha />

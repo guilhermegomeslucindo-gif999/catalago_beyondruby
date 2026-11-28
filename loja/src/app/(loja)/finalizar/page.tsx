@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "Finalizar compra", robots: { index: 
 
 export default async function Pagina() {
   const { frete, loja, clube } = await getConfigs();
-  return <Finalizar frete={frete} loja={{ responsavel: loja.responsavel, cnpj: loja.cnpj, whatsapp: loja.whatsapp }} clube={clube} />;
+  return <Finalizar frete={frete} loja={{ responsavel: loja.responsavel, cnpj: loja.cnpj, whatsapp: loja.whatsapp, bilhete_valor: loja.bilhete_valor }} clube={clube} />;
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Produto } from "@/lib/tipos";
 import { CardPeca } from "./CardPeca";
+import { IcCoracao, useFavoritas } from "./Favoritos";
 import { IcFechar } from "./Icones";
 
 type Ordem = "destaque" | "menor" | "maior" | "novidades";
@@ -25,6 +26,8 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
   const [faixa, setFaixa] = useState<Faixa>("");
   const [ordem, setOrdem] = useState<Ordem>(ordemInicial);
   const [painel, setPainel] = useState(false);
+  const [soFav, setSoFav] = useState(false);
+  const favoritas = useFavoritas();
 
   useEffect(() => {
     document.body.style.overflow = painel ? "hidden" : "";
@@ -36,17 +39,17 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
   const lista = useMemo(() => {
     const termos = busca ? sem(busca).split(/\s+/).filter(Boolean) : [];
     let l = produtos.filter((p) =>
-      (!tom || p.tom === tom) && (!soDisp || p.status === "ativo") && naFaixa(p.preco, faixa) &&
+      (!tom || p.tom === tom) && (!soDisp || p.status === "ativo") && (!soFav || !!favoritas?.includes(p.id)) && naFaixa(p.preco, faixa) &&
       termos.every((t) => sem(`${p.nome} ${p.categoria} ${p.tom} ${p.descricao ?? ""}`).includes(t)));
     const esg = (p: Produto) => (p.status === "esgotado" ? 1 : 0);
     if (ordem === "menor") l = [...l].sort((a, b) => esg(a) - esg(b) || a.preco - b.preco);
     if (ordem === "maior") l = [...l].sort((a, b) => esg(a) - esg(b) || b.preco - a.preco);
     if (ordem === "novidades") l = [...l].sort((a, b) => esg(a) - esg(b) || Number(b.novidade) - Number(a.novidade) || b.criado_em.localeCompare(a.criado_em));
     return l;
-  }, [produtos, tom, soDisp, faixa, ordem, busca]);
+  }, [produtos, tom, soDisp, faixa, ordem, busca, soFav, favoritas]);
 
-  const nAtivos = (tom ? 1 : 0) + (soDisp ? 1 : 0) + (faixa ? 1 : 0);
-  const limpar = () => { setTom(""); setSoDisp(false); setFaixa(""); };
+  const nAtivos = (tom ? 1 : 0) + (soDisp ? 1 : 0) + (faixa ? 1 : 0) + (soFav ? 1 : 0);
+  const limpar = () => { setTom(""); setSoDisp(false); setFaixa(""); setSoFav(false); };
   const qtd = `${lista.length} ${lista.length === 1 ? "peça" : "peças"}${busca ? ` para “${busca}”` : ""}`;
 
   const abas = categorias && (
@@ -79,6 +82,10 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
         <legend>Disponibilidade</legend>
         <label className="vt-opcao"><input type="checkbox" checked={soDisp} onChange={() => setSoDisp(!soDisp)} />Somente disponíveis</label>
       </fieldset>
+      <fieldset className="vt-grupo">
+        <legend>Favoritas</legend>
+        <label className="vt-opcao"><input type="checkbox" checked={soFav} onChange={() => setSoFav(!soFav)} /><span className="vt-fav-ic"><IcCoracao cheio /></span>Só minhas favoritas{favoritas?.length ? ` (${favoritas.length})` : ""}</label>
+      </fieldset>
     </>
   );
   const ativosChips = nAtivos > 0 && (
@@ -86,6 +93,7 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
       {tom && <button onClick={() => setTom("")}>{tom} <IcFechar /></button>}
       {faixa && <button onClick={() => setFaixa("")}>{FAIXAS.find((f) => f[0] === faixa)![1]} <IcFechar /></button>}
       {soDisp && <button onClick={() => setSoDisp(false)}>Somente disponíveis <IcFechar /></button>}
+      {soFav && <button onClick={() => setSoFav(false)}>Minhas favoritas <IcFechar /></button>}
       <button className="limpar" onClick={limpar}>Limpar filtros</button>
     </div>
   );
@@ -128,6 +136,7 @@ export function Vitrine({ produtos, whatsapp, categorias, categoriaAtual, busca,
       {abas}
       <div className="vt-barra">
         <button className="vt-filtrar" onClick={() => setPainel(true)}><IcFiltro />Filtrar{nAtivos ? ` (${nAtivos})` : ""}</button>
+        {!!favoritas?.length && <button className={`vt-so-fav${soFav ? " on" : ""}`} aria-pressed={soFav} onClick={() => setSoFav(!soFav)}><IcCoracao cheio={soFav} />Favoritas</button>}
         <span className="vt-qtd" aria-live="polite">{qtd}</span>
         {ordenar}
       </div>

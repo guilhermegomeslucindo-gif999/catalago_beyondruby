@@ -129,23 +129,41 @@ Deno.serve(async (req) => {
       creditoUsado = Math.floor(creditoUsado * 100) / 100;
     }
 
-    const total = Math.round((subtotal - desconto - creditoUsado + frete) * 100) / 100;
+    // ---------- presente e bilhete ----------
+    const presente = b.presente === true;
+    const bilhete = presente ? so(b.bilhete).replace(/\s+\n/g, "\n").slice(0, 200) : "";
+    let bilheteValor = 0;
+    if (bilhete) {
+      const { data: lj } = await db.from("configuracoes").select("valor").eq("chave", "loja").single();
+      bilheteValor = Math.max(0, Number(lj?.valor?.bilhete_valor ?? 1));
+    }
+
+    const total = Math.round((subtotal - desconto - creditoUsado + frete + bilheteValor) * 100) / 100;
 
     // ---------- grava o pedido ----------
     const { data: pedido, error: e1 } = await db.from("pedidos").insert({
       cliente_nome: nome, cliente_email: email, cliente_whatsapp: whats,
       entrega_tipo: tipo, entrega_regiao: regiao, endereco,
       subtotal: Math.round(subtotal * 100) / 100, frete, total, cupom, desconto, credito_usado: creditoUsado,
+      presente, bilhete: bilhete || null, bilhete_valor: bilheteValor,
       observacao: so(b.observacao).slice(0, 500) || null,
     }).select("id,numero,token").single();
     if (e1) throw e1;
 
     // quem marcou "quero receber novidades" entra no Clube (sem cupom novo)
     if (b.cliente?.aceita_novidades === true) {
-      await db.from("clube").upsert(
-        { nome: nome.split(" ")[0].slice(0, 60), email, whatsapp: whats.replace(/^55(?=\d{10,11}$)/, ""), origem: "compra", aceita_novidades: true },
-        { onConflict: "email", ignoreDuplicates: true },
-      );
+      // aniversário opcional (dia e mês)
+      const dia = Math.floor(Number(b.cliente?.aniversario_dia)), mes = Math.floor(Number(b.cliente?.aniversario_mes));
+      const dataOk = dia >= 1 && mes >= 1 && mes <= 12 && dia <= new Date(2000, mes, 0).getDate();
+      const aniv = dataOk ? { aniversario_dia: dia, aniversario_mes: mes } : {};
+      const { data: jaTem } = await db.from("clube").select("id,aniversario_dia").eq("email", email).maybeSingle();
+      if (!jaTem) {
+        await db.from("clube").insert(
+          { nome: nome.split(" ")[0].slice(0, 60), email, whatsapp: whats.replace(/^55(?=\d{10,11}$)/, ""), origem: "compra", aceita_novidades: true, ...aniv },
+        );
+      } else if (dataOk && !jaTem.aniversario_dia) {
+        await db.from("clube").update(aniv).eq("id", jaTem.id);
+      }
     }
 
     const { error: e2 } = await db.from("pedido_itens").insert(produtos.map((p) => ({
@@ -168,6 +186,7 @@ Deno.serve(async (req) => {
           quantity: qtd.get(p.id)!, price: Math.round(Number(p.preco) * 100), description: p.nome.slice(0, 100),
         }));
     if (frete > 0) ipItens.push({ quantity: 1, price: Math.round(frete * 100), description: `Frete – ${nomeEntrega[tipo]}` });
+    if (bilheteValor > 0) ipItens.push({ quantity: 1, price: Math.round(bilheteValor * 100), description: "Bilhete personalizado para presente" });
 
     const handle = await handleInfinitePay(db);
     const r = await fetch(`${IP_API}/links`, {
