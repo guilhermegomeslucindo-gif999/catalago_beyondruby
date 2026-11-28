@@ -6,7 +6,6 @@ import { AvaliacoesPeca, NotaPeca } from "@/components/Avaliacoes";
 import { BotaoFavorito, RegistrarVista } from "@/components/Favoritos";
 import { GuiaTamanhos } from "@/components/GuiaTamanhos";
 import { poucasUnidades, UltimasUnidades } from "@/components/Estoque";
-import { VistasRecentes } from "@/components/Vistas";
 import { CardPeca, mensagemAviseMe } from "@/components/CardPeca";
 import { Galeria } from "@/components/Galeria";
 import { IcCaminhao, IcCadeado, IcEscudo, IcPix, IcZap } from "@/components/Icones";
@@ -149,7 +148,6 @@ export default async function Peca({ params }: { params: Promise<{ slug: string 
           </div>
         </section>
       )}
-      <VistasRecentes produtos={todos} whatsapp={loja.whatsapp} excluir={p.id} />
     </>
   );
 }
